@@ -1,7 +1,6 @@
 import numpy as np
 import torch
-
-
+from torchviz import make_dot
 
 # 创建ndarray数组
 arr = np.array([1,2,3,4,5,6,7,8], float)
@@ -209,4 +208,14 @@ agg = tensor.sum()
 agg_item = agg.item()
 print("agg_item=",agg_item, "type(agg_item)=",type(agg_item))
 
-
+# 定义矩阵 A，向量 b 和常数 c
+A = torch.randn(18, 8,requires_grad=True)
+b = torch.randn(8,requires_grad=True)
+c = torch.randn(18,requires_grad=True)
+x = torch.randn(8, requires_grad=True)
+# 计算 x^T * A + A * b + b * x + 3*c
+result = torch.matmul(A, x.T) + torch.matmul(A, b) + torch.matmul(b, x) + 3*c
+# ⽣成计算图节点
+dot = make_dot(result, params={'A': A, 'b': b, 'c': c, 'x': x})
+# 绘制计算图
+dot.render('expression', format='png', cleanup=True, view=False)
