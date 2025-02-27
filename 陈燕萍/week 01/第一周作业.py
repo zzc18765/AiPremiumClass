@@ -290,4 +290,54 @@ numpy.exceptions.AxisError: axis -1 is out of bounds for array of dimension 0
 >>> sorted_a = np.sort(a)
 >>> print(a)
 [23 45 12 56 34]
->>>
+>>> a9 = np.array([[1,2,3],[4,5,6]])
+>>> b9 = np.array([[1,2,3],[4,5,6]])
+>>> print(a9*b9)
+[[ 1  4  9]
+ [16 25 36]]
+>>> m1 = np.array([[1, 2], [3, 4]], dtype=np.float32)
+>>> m2 = np.array([[5, 6], [7, 8]], dtype=np.float32)
+>>> result_dot = np.dot(m1, m2)
+>>> result_at = m1 @ m2
+>>> print("矩阵 1:")
+矩阵 1:
+>>> print(m1)
+[[1. 2.]
+ [3. 4.]]
+>>> print(m2)
+[[5. 6.]
+ [7. 8.]]
+>>> tprint(result_dot)
+Traceback (most recent call last):
+  File "<stdin>", line 1, in <module>
+NameError: name 'tprint' is not defined. Did you mean: 'print'?
+>>> print(result_dot)
+[[19. 22.]
+ [43. 50.]]
+>>> print(result_at)
+[[19. 22.]
+ [43. 50.]]
+>>> np.save('result.npy',manual_result)
+Traceback (most recent call last):
+  File "<stdin>", line 1, in <module>
+NameError: name 'manual_result' is not defined
+>>> manual_result = np.array([1, 2, 3, 4, 5])
+>>> np.save('result.npy', manual_result)
+>>> result_np = np.load('result.npy')
+>>> print(result_np)
+[1 2 3 4 5]
+>>> a = np.array([1,2,3])
+>>> b = np.array([4,5,6])
+>>> print(a+n)
+Traceback (most recent call last):
+  File "<stdin>", line 1, in <module>
+NameError: name 'n' is not defined. Did you mean: 'np'?
+>>> print(a+b)
+[5 7 9]
+>>> a = np.array([(1,2), (2,2), (3,3), (4,4)])
+>>> b = np.array([-1,1])
+>>> print(a+b)
+[[0 3]
+ [1 3]
+ [2 4]
+ [3 5]]
