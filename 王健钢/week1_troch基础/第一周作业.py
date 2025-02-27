@@ -131,3 +131,22 @@ result_up
 a = np.array([1,2,3])
 b = np.array([4,5,6])
 a + b
+
+
+import torch
+from torchviz import make_dot
+
+# 定义矩阵 A，向量 b 和常数 c
+A = torch.randn(10, 10,requires_grad=True)  # requires_grad=True 表示我们要对 A 求导
+b = torch.randn(10,requires_grad=True)
+c = torch.randn(1,requires_grad=True)
+x = torch.randn(10, requires_grad=True)
+
+
+# 计算 x^T * A + b * x + c
+result = torch.matmul(A, x.T) + torch.matmul(b, x) + c
+
+# 生成计算图节点
+dot = make_dot(result, params={'A': A, 'b': b, 'c': c, 'x': x})
+# 绘制计算图
+dot.render('expression', format='png', cleanup=True, view=False)
