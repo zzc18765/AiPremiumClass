@@ -1,5 +1,6 @@
 import torch
 import numpy as np
+from torchviz import make_dot
 
 data = [[1, 2], [3, 4]]
 
@@ -103,12 +104,14 @@ def fun8():
     # 线性间隔向量(返回⼀个1维张量，包含在区间start和end上均匀间隔的steps个点)
     print(torch.linspace(start=5, end=7, steps=7))
 
+
 def fun9():
-    tensor = torch.rand(3,4)
+    tensor = torch.rand(3, 4)
     # print(f"Shape of tensor: {tensor.shape}")
     # print(f"Datatype of tensor: {tensor.dtype}")
     # print(f"Device tensor is stored on: {tensor.device}")
     return tensor
+
 
 def fun10(tensor):
     print(tensor)
@@ -119,8 +122,166 @@ def fun10(tensor):
         print(tensor)
         print(tensor.device)
 
+
+def func11():
+    tensor = torch.eye(4, 4)
+    print('First row:', tensor[0])
+    print('Second column:', tensor[:, 1])
+    print('Last column:', tensor[..., -1])
+    tensor[:, 1] = 0
+    print(tensor)
+
+
+def fun12():
+    a = torch.ones(3, 3)
+    b = torch.ones(3, 3)
+    print(a)
+    print(b)
+    t1 = torch.cat([a, b], dim=1)
+    print(t1)
+
+
+def fun13():
+    """
+        矩阵乘法 (@, matmul)：
+        用于计算两个张量的矩阵乘积。
+        结果是一个新的张量，其形状取决于输入张量的形状。
+        通常用于线性代数中的矩阵运算。
+        逐元素乘法 (*, mul)：
+        用于计算两个张量的逐元素乘积。
+        结果是一个新的张量，其形状与输入张量相同。
+        通常用于广播操作和逐元素运算。
+
+        相同点
+        数据结构：两者都作用于矩阵（或者更一般地说，张量），即都是针对二维数组（或多维数组）进行操作。
+        计算结果类型：两种运算的结果都是一个新的矩阵或张量，其元素由特定规则计算得出。
+        不同点
+        定义与计算方式：
+        矩阵乘法：遵循线性代数中的矩阵乘法规则，其中结果矩阵的每个元素是第一个矩阵的一行与第二个矩阵的一列对应相乘后的和.
+        对于两个矩阵 A和B,如果A是m x n矩阵,B是n x p矩阵,则结果矩阵是 m x p 的矩阵,矩阵乘法不是交换的, 即通常AB 不等于BA
+        逐元素乘法：也称为哈达玛积（Hadamard Product），指的是两个矩阵中对应位置的元素相乘。两个参与运算的矩阵必须具有相同的尺寸（或其中之一可以广播到另一个的尺寸）。
+        逐元素乘法是交换的，意味着对相同尺寸的矩阵A和B,有A X B = B x A
+
+        维度要求：
+        矩阵乘法：第一个矩阵的列数必须等于第二个矩阵的行数。
+        逐元素乘法：两个矩阵的维度必须完全相同，或者其中一个可以被广播以匹配另一个矩阵的形状。
+    """
+    tensor = torch.ones(3, 3)
+    print(tensor)
+    y1 = tensor @ tensor.T
+    y2 = tensor @ tensor.T
+    y3 = torch.rand_like(tensor)
+    a = torch.matmul(tensor, tensor.T, out=y3)
+    print(y1)
+    print(y2)
+    print(y3)
+    print(a)
+
+
+def func14():
+    tensor = torch.tensor([[1, 2, 3], [4, 5, 6]])
+    agg = tensor.sum()
+    print(type(agg))
+    agg_item = agg.item()
+    print(agg_item, type(agg_item))
+
+
+def func15():
+    """
+    In-place操作
+    把计算结果存储到当前操作数中的操作就称为就地操作。含义和pandas中inPlace参
+    数的含义⼀样。pytorch中，这些操作是由带有下划线_后缀的函数表示
+    In-place操作虽然节省了⼀部分内存，但在计算导数时可能会出现
+    问题，因为它会⽴即丢失历史记录。因此，不⿎励使⽤它们。
+    """
+    tensor = torch.tensor([[1, 2, 3], [4, 5, 6]])
+    print(tensor, "\n")
+    tensor.add_(5)
+    print(tensor)
+
+
+def func16():
+    t = torch.ones(5)
+    print(f"t: {t}")
+    n = t.numpy()
+    print(f"n: {n}")
+    np.add(n, 1, out=n)
+    print(f"n: {n}")
+    """
+    t: tensor([1., 1., 1., 1., 1.])
+    n: [1. 1. 1. 1. 1.]
+    n: [2. 2. 2. 2. 2.]
+    """
+
+
+def func17():
+    """
+    NumPy 数组的变化也反映在张量中。
+    """
+    n = np.ones(5)
+    t = torch.from_numpy(n)
+    np.add(n, 1, out=n)
+    print(f"t: {t}")
+    print(f"n: {n}")
+
+
+def func18():
+    # 定义矩阵 A，向量 b 和常数 c
+    A = torch.randn(10, 10, requires_grad=True)
+    b = torch.randn(10, requires_grad=True)
+    c = torch.randn(1, requires_grad=True)
+    x = torch.randn(10, requires_grad=True)
+
+    # 计算 x^T * A + b * x + c
+    result = torch.matmul(A, x.T) + torch.matmul(b, x) + c
+    # ⽣成计算图节点
+    dot = make_dot(result, params={'A': A, 'b': b, 'c': c, 'x': x})
+    # 绘制计算图
+    dot.render('expression', format='png', cleanup=True, view=False)
+
+
+def fun19():
+    # 定义矩阵 A，向量 b 和常数 c
+    A = torch.randn(10, 10, requires_grad=True)
+    b = torch.randn(10, requires_grad=True)
+    c = torch.randn(1, requires_grad=True)
+    x = torch.randn(10, requires_grad=True)  # 确保 x 是一个二维张量，形状为 (10,)
+
+    # 计算 x^T * A + b * x + c
+    # 将 x 转换为形状 (10, 1)，以进行矩阵乘法
+    x_column = x.unsqueeze(1)  # 转换为形状 (10, 1)
+
+    # 进行矩阵乘法，结果将是形状 (10, 1)
+    Ax_result = torch.matmul(A, x_column)
+
+    # b * x 部分可以直接使用点积，因为 b 和 x 都是一维向量
+    bx_result = torch.matmul(b.unsqueeze(0), x_column).squeeze()  # 结果是一维向量
+
+    # 注意c的维度，这里假设c是一个标量，因此我们直接广播它
+    result = Ax_result.squeeze() + bx_result + c.squeeze()
+
+    # 生成计算图节点
+    dot = make_dot(result, params={'A': A, 'b': b, 'c': c, 'x': x})
+    # 绘制计算图
+    dot.render('expression', format='png', cleanup=True, view=False)
+
+def func20():
+    # 定义矩阵 A，向量 b 和常数 c
+    A = torch.randn(10, 10, requires_grad=True)
+    b = torch.randn(10, requires_grad=True)
+    c = torch.randn(1, requires_grad=True)
+    x = torch.randn(10, requires_grad=True)
+
+    # 计算 x^T * A + b * x + c
+    result = torch.matmul(A, x.T) + torch.matmul(b, x) + c
+    # ⽣成计算图节点
+    dot = make_dot(result, params={'A': A, 'b': b, 'c': c, 'x': x})
+    # 绘制计算图
+    dot.render('expression', format='png', cleanup=True, view=False)
+
+
 if __name__ == '__main__':
     # fun4(func1())
-    fun10(fun9())
-    print(torch.version.cuda)
-
+    # fun10(fun9())
+    # print(torch.version.cuda)
+    func18()
