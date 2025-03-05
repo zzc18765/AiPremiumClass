@@ -1,18 +1,3 @@
-
-import torch
-import matplotlib.pyplot as plt
-
-# 样本数据
-x_data = torch.linspace(-1, 6, 120)
-# 模拟损失函数
-y_data = (x_data - 2.5) ** 2 - 1
-# 绘制曲线图
-plt.plot(x_data, y_data)
-plt.show()
-
-
-
-
 """
     目标：假设y = (x-2.5) ** 2 -1 为损失函数 -求最优拟合曲线
         一、目标求β1(θ：斜率)和β0(bias：截距)最优值；
@@ -31,7 +16,7 @@ import torch
 import numpy as np
 import matplotlib.pyplot as plt
 
-# ① 获取损失函数
+# ① 获取损失函数-只有一个参数θ->考虑如果有两个未知参数如何求最优值
 def loss(theta):
     return (theta - 2.5) ** 2 - 1
 # ② 获取损失函数偏导数
@@ -71,6 +56,4 @@ x_data = torch.linspace(-1, 6, 120)
 plt.plot(x_data, loss(x_data))
 plt.plot(np.array(theta_his), loss(np.array(theta_his)),color="r",marker="+")
 plt.show()
-
-
 
