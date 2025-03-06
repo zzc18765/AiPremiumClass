@@ -1,48 +1,74 @@
-"""
-1. 数据准备，参数初始化
-2. 前向计算
-3. 计算损失
-4. 计算梯度
-5. 更新参数
-"""
-import torch
-from sklearn.datasets import load_iris
+from sklearn.model_selection import train_test_split
+import numpy as np
 from sklearn.datasets import make_classification
+from sklearn.datasets import load_iris
 
-# 超参数：学习率
-learn_rate = 1e-3
-# 1.1 数据准备
-# X, y = make_classification(n_features=10)
 X,y = load_iris(return_X_y=True)
-# 创建张量
-tensor_x = torch.tensor(X[:100], dtype=torch.float)
-tensor_y = torch.tensor(y[:100], dtype=torch.float)
-# 1.2 创建参数并初始化
-# x [100,10] * w[1,10]
+# y = β0 + β1x + ϵ
+# # ⽣成观测值数据
+# X, y = make_classification(n_features=10)
+# 拆分训练和测试集
+train_X, test_X, train_y, test_y = train_test_split(X[:100], y[:100], test_size=0.3, shuffle=True)
+# 初始化参数模型参数
+theta = np.random.randn(1, 4)
+bias = 0
+# 学习率
+lr = 1e-2
+# 模型训练的轮数
+epoch = 5000
+# 前向计算
 
-w = torch.randn(1, 4, requires_grad=True)  # 初始化参数w
-b = torch.randn(1, requires_grad=True)  # 初始化参数b
-for i in range(5000):
-    # 2. 前向运算
-    r = torch.nn.functional.linear(tensor_x, w, b)
-    r = torch.sigmoid(r)
-    # 3. 计算损失
-    loss = torch.nn.functional.binary_cross_entropy(r.squeeze(1), tensor_y, reduction='mean')
-    # 4.计算梯度
-    loss.backward()
-    # 5.参数更新
-    with torch.autograd.no_grad():  # 关闭梯度计算跟踪
-        w -= learn_rate * w.grad  # 更新权重梯度
-        w.grad.zero_()  # 清空本次计算的梯度（因为梯度是累加计算，不清空就累
-        b -= learn_rate * b.grad  # 更新偏置项梯度
-        b.grad.zero_()  # 清空本次计算的梯度
 
-    # item()张量转换python基本类型
-    print(f'train loss:{loss.item():.4f}')
+def forward(x, theta, bias):
+    # linear
+    z = np.dot(theta, x.T) + bias
+    # z = np.dot(theta.T,x.T) + bias
+    # sigmoid
+    y_hat = 1 / (1 + np.exp(-z))
+    return y_hat
+
+
+# 损失函数
+def loss_function(y, y_hat):
+    e = 1e-8  # 防⽌y_hat计算值为0，添加的极⼩值epsilon
+    return - y * np.log(y_hat + e) - (1 - y) * np.log(1 - y_hat + e)
+
+
+# 计算梯度
+def calc_gradient(x, y, y_hat):
+    m = x.shape[-1]
+    delta_w = np.dot(y_hat - y, x) / m
+    delta_b = np.mean(y_hat - y)
+    return delta_w, delta_b
+
+
+for i in range(epoch):
+    # 正向
+    y_hat = forward(train_X, theta, bias)
+    # 计算损失
+    loss = np.mean(loss_function(train_y, y_hat))
+    if i % 100 == 0:
+        print('step:', i, 'loss:', loss)
+    # 梯度下降
+    dw, db = calc_gradient(train_X, train_y, y_hat)
+    # 更新参数
+    theta -= lr * dw
+    bias -= lr * db
+# 测试模型
+idx = np.random.randint(len(test_X))
+x = test_X[idx]
+y = test_y[idx]
+
+def predict(x):
+     pred = forward(x,theta,bias)[0]
+     if pred > 0.5:
+       return 1
+     else:
+       return 0
+
+pred = predict(x)
+
+print(f'预测值：{pred} 真实值：{y}')
 # 保存模型参数
-torch.save({
-    'weights': w,
-    'bias': b,
-    'input_shape': (1, 4)  # 保存输入维度信息
-}, "model_params.pt")
-print(f"模型参数已保存至 model_params.pt")
+np.savez('model_params.npz', theta=theta, bias=bias)
+print("模型参数已保存至model_params.npz")
