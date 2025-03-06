@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib
 from sklearn.model_selection import train_test_split
-
+import json
 matplotlib.use('TkAgg')  # 或者 'Qt5Agg', 'Agg' 等
 import matplotlib.pyplot as plt
 from sklearn.datasets import make_classification
@@ -110,3 +110,83 @@ from sklearn.datasets import load_iris
 X,y = load_iris(return_X_y=True)
 print(X.shape,y.shape)
 print(x[:100])
+
+
+import numpy as np
+import pandas as pd
+from sklearn.model_selection import train_test_split
+from sklearn.datasets import load_iris
+from sklearn.metrics import accuracy_score
+
+iris = load_iris()
+X = iris.data
+y = iris.target
+
+iris_df = pd.DataFrame(data=X, columns=iris.feature_names)
+iris_df['target'] = y
+print(iris_df.head())
+print(iris.feature_names)
+print(iris.target_names)
+# 筛选target为0和1的样本
+iris_filtered = iris_df[iris_df['target'].isin([0, 1])]
+print(iris_filtered.shape)
+X_filtered = iris_filtered.drop(columns = ["target"])
+y_filtered = iris_filtered['target']
+X_train, X_test, y_train, y_test = train_test_split(X_filtered, y_filtered, test_size=0.2, random_state=42)
+# 在X中添加一列全为1的数据，用于计算偏置项
+X_train_b = np.c_[np.ones((X_train.shape[0], 1)), X_train]  # 添加偏置项的列
+X_test_b = np.c_[np.ones((X_test.shape[0], 1)), X_test]
+
+def sigmoid(z):
+    return 1 / (1 + np.exp(-z))
+
+def compute_cost(X, y, theta):
+    m = y.size
+    h = sigmoid(X.dot(theta))
+    cost = -1/m * np.sum(y * np.log(h) + (1 - y) * np.log(1 - h))
+    return cost
+
+def compute_gradients(X, y, theta):
+    m = len(y)
+    h = sigmoid(X.dot(theta))
+    gradients = 1/m * X.T.dot(h - y)  # 梯度
+    return gradients
+
+# 5. 实现梯度下降
+def gradient_descent(X, y, theta, learning_rate, iterations):
+    cost_history = []
+
+    for i in range(iterations):
+        gradients = compute_gradients(X, y, theta)  # 计算梯度
+        theta = theta - learning_rate * gradients  # 更新theta
+        cost = compute_cost(X, y, theta)  # 计算损失
+        cost_history.append(cost)  # 保存损失历史
+
+    return theta, cost_history
+
+theta_initial = np.random.randn(X_train_b.shape[1], 1)
+learning_rate = 0.1
+iterations = 1000
+theta, cost_history = gradient_descent(X_train_b, y_train.values.reshape(-1, 1), theta_initial, learning_rate, iterations)
+print(theta.dtype)
+print(f"最终损失: {cost_history[-1]}")
+
+# # 可视化损失曲线
+# plt.plot(range(iterations), cost_history, label="Cost (Log Loss)")
+# plt.xlabel('Iterations')
+# plt.ylabel('Cost')
+# plt.title('Gradient Descent Optimization')
+# plt.legend()
+# plt.show()
+theta_optimal = theta.copy()
+def predict(X, theta):
+    probabilities = sigmoid(X.dot(theta))
+    return (probabilities >= 0.5).astype(int)
+
+y_pred = predict(X_test_b, theta_optimal)
+
+accuracy = accuracy_score(y_test, y_pred)
+print(f"模型在测试集上的准确率: {accuracy}")
+theta_list = theta_optimal.tolist()
+with open("theta.json", "w") as f:
+    json.dump(theta_list, f)
