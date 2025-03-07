@@ -2,8 +2,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.datasets import make_classification
 from sklearn.model_selection import train_test_split
-from sympy import print_tree
-from sympy.abc import theta, delta
 
 
 # 损失函数对应的导数
@@ -53,7 +51,7 @@ print(y.shape)
 
 
 x_train , x_test , y_train, y_test = train_test_split(x,y,test_size=0.50)
-print(x_train.shape,x_test.shape)
+print(x_train)
 
 # 权重
 theta = np.random.randn(1,20) # shape (1,10)
@@ -112,7 +110,7 @@ for i in range(epochs):
 
     if i % 100 == 0 :
         #求准确率
-        acc = np.mean(np.round(y_hat == y_train))
+        acc = np.mean(np.round(y_hat )== y_train)
         print(f"epoch:{i} , loss:{np.mean(loss(y_test, y_hat))} ,acc : {acc}")
 
 def predict_function_usage():
@@ -120,7 +118,7 @@ def predict_function_usage():
     x = x_test[idx]
     y=  y_test[idx]
     predict = np.round(forward(x,theta,bais))
-    print(predict)
+    print('pre = ',predict,',true=',y)
     return
 predict_function_usage()
 
