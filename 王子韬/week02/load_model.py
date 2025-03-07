@@ -3,7 +3,7 @@ from sklearn.datasets import load_iris
 from sklearn.linear_model import LogisticRegression
 
 # 加载保存的模型参数
-model_params_filename = 'model_params.npz'
+model_params_filename = 'best_iris_model.npz'
 loaded_params = np.load(model_params_filename)
 theta = loaded_params['theta']
 bias = loaded_params['bias']
