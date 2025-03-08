@@ -5,6 +5,8 @@ import  matplotlib.pyplot as plt
 from sklearn.datasets import load_iris
 from sklearn.model_selection import train_test_split
 
+# 定义保存模型名称
+MODEL_NAME='model.npz'
 
 
 ######################## 作业 ##########################
@@ -30,7 +32,7 @@ def initData():
     x1, y1 = load_iris(return_X_y=True)
     x1=x1[:100]
     y1=y1[:100]
-    return train_test_split(x1,y1,test_size=0.2,shuffle=True)
+    return train_test_split(x1,y1,test_size=0.5,shuffle=True)
 
 # 模型 得出y的 概率
 def calc_model(xTrain,theta,bias):
@@ -56,13 +58,15 @@ def calc_gradient(xTrain,yTrain,y_hat):
 
 
 if __name__ == '__main__':
+
+
     # 初始化参数
     theta = np.random.randn(1,4)  # shape (1,10)
     bais = 0
     # 学习率
-    lr = 0.001
+    lr = 0.008
     # 最大训练批次
-    epochs = 3000
+    epochs = 5000
     #极小值
     epsilon = 1e-8
     xTrain, xTest, yTrain, yTest = initData()
@@ -80,24 +84,32 @@ if __name__ == '__main__':
         bais = bais - lr * delta_bias
 
         # print(theta,bais)
-        if i % 100 == 0:
+        if i % 50 == 0:
             # 求准确率
             acc = np.mean(np.round(y_hat) == yTrain)
             print(f"epoch:{i} , loss:{np.mean(calc_loss(yTrain, y_hat,epsilon))}  , acc : {acc}")
 
-        # if (abs(lossVal t432- last_loss) < epsilon):
-        #     print('训练结束： =',lossVal)
-        #     break
-        # # 更新循环
-        # last_loss = lossVal
+    np.savez(MODEL_NAME, theta=theta,bais=bais)
 
+    # idx = np.random.randint(len(xTest)) #
+    # print(idx)
+    # x = xTest[idx]
+    # y=  yTest[idx]
+    # historyY = []
+    #
+    # for i in range(len(yTest)):
+    #     predict = np.round(calc_model(x, theta, bais))
+    #     print(f"y: {y}, predict: {predict}")
+    #     historyY.append(yTest[i])
+    # print(historyY)
+    #
+    # # for i in range(len(yTest)):
+    # #     predict = np.round(calc_model(x,theta,bais)[0])
+    # #     historyY.append(predict)
+    # # print(historyY)
 
-    idx = np.random.randint(len(xTest)) #
-    x = xTest[idx]
-    y=  yTest[idx]
-    historyY = []
-
-    for i in range(len(yTest)):
-        predict = np.round(calc_model(x,theta,bais)[0])
-        historyY.append(predict)
-    print(historyY)
+def predict_iris(x):
+    model_param = np.load(MODEL_NAME)
+    theta = model_param['theta']
+    bais = model_param['bais']
+    return np.round(calc_model(x, theta, bais))[0]
