@@ -62,7 +62,7 @@ if __name__ == '__main__':
 
     # 初始化参数
     theta = np.random.randn(1,4)  # shape (1,10)
-    bais = 0
+    bias = 0
     # 学习率
     lr = 0.008
     # 最大训练批次
@@ -74,42 +74,25 @@ if __name__ == '__main__':
     last_loss = 0
     for i in range(epochs):
         # 向量计算
-        y_hat = calc_model(xTrain,theta,bais)
+        y_hat = calc_model(xTrain,theta,bias)
         # 损失计算
         lossVal = calc_loss(yTrain,y_hat,epsilon)
         # 梯度增量
         delta_theta, delta_bias = calc_gradient(xTrain,yTrain,y_hat)
         # 更新参数
         theta = theta - lr * delta_theta
-        bais = bais - lr * delta_bias
+        bias = bias - lr * delta_bias
 
-        # print(theta,bais)
+        # print(theta,bias)
         if i % 50 == 0:
             # 求准确率
             acc = np.mean(np.round(y_hat) == yTrain)
             print(f"epoch:{i} , loss:{np.mean(calc_loss(yTrain, y_hat,epsilon))}  , acc : {acc}")
 
-    np.savez(MODEL_NAME, theta=theta,bais=bais)
-
-    # idx = np.random.randint(len(xTest)) #
-    # print(idx)
-    # x = xTest[idx]
-    # y=  yTest[idx]
-    # historyY = []
-    #
-    # for i in range(len(yTest)):
-    #     predict = np.round(calc_model(x, theta, bais))
-    #     print(f"y: {y}, predict: {predict}")
-    #     historyY.append(yTest[i])
-    # print(historyY)
-    #
-    # # for i in range(len(yTest)):
-    # #     predict = np.round(calc_model(x,theta,bais)[0])
-    # #     historyY.append(predict)
-    # # print(historyY)
+    np.savez(MODEL_NAME, theta=theta,bias=bias)
 
 def predict_iris(x):
     model_param = np.load(MODEL_NAME)
     theta = model_param['theta']
-    bais = model_param['bais']
-    return np.round(calc_model(x, theta, bais))[0]
+    bias = model_param['bias']
+    return np.round(calc_model(x, theta, bias))[0]

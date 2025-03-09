@@ -55,7 +55,7 @@ print(x_train)
 
 # 权重
 theta = np.random.randn(1,20) # shape (1,10)
-bais = 0 #偏导
+bias = 0 #偏导
 
 #超参数
 lr = 0.01
@@ -99,14 +99,14 @@ def calc_gradient(x,y,y_hat):
 
 for i in range(epochs):
     #前向计算
-    y_hat = forward(x_train,theta,bais)
+    y_hat = forward(x_train,theta,bias)
     #计算损失
     loss_V = loss(y_train,y_hat)
     # 梯度计算
     delta_theta, delta_bias = calc_gradient(x_train,y_train,y_hat)
     # 更新
     theta = theta - lr * delta_theta
-    bais = bais -  lr* delta_bias
+    bias = bias -  lr* delta_bias
 
     if i % 100 == 0 :
         #求准确率
@@ -117,7 +117,7 @@ def predict_function_usage():
     idx = np.random.randint(len(x_test)) #
     x = x_test[idx]
     y=  y_test[idx]
-    predict = np.round(forward(x,theta,bais))
+    predict = np.round(forward(x,theta,bias))
     print('pre = ',predict,',true=',y)
     return
 predict_function_usage()
