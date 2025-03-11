@@ -1,0 +1,149 @@
+#本周作业：
+# 1. 使用pytorch搭建神经网络模型，实现对KMNIST数据集的训练。
+# https://pytorch.org/vision/stable/generated/torchvision.datasets.KMNIST.html#torchvision.datasets.KMNIST
+# 2. 尝试调整模型结构（变更神经元数量，增加隐藏层）来提升模型预测的准确率
+# 3. 调试超参数，观察学习率和批次大小对训练的影响。
+
+import torch
+from torch import nn
+from torch.utils.data import DataLoader
+from torchvision import datasets,transforms
+import matplotlib.pyplot as plt
+
+
+def load_KMNIST():
+    train_data = datasets.KMNIST(
+        root='../data',
+        train=True,
+        download=True,
+        transform=transforms.ToTensor()
+    )
+    test_data = datasets.KMNIST(
+        root='../data',
+        train=False,
+        download=True,
+        transform=transforms.ToTensor()
+    )
+
+    return train_data, test_data
+
+def load_DataLoader(BATCH_SIZE):
+    train_data, test_data = load_KMNIST()
+    #使用数据加载器 批量加载
+    # print(train_data, test_data)
+    train_data = DataLoader(train_data, batch_size=BATCH_SIZE, pin_memory=True,shuffle=True)
+    test_data = DataLoader(test_data, batch_size=BATCH_SIZE , pin_memory=True)
+    return train_data, test_data
+
+
+# train,test = load_DataLoader(BATCH_SIZE=1)
+
+
+def data_usage():
+    train_data = datasets.KMNIST(
+        root='../data',
+        train=True,
+        download=True,
+    )
+    print(len(train_data)) # 数据长度 -> 60000
+    # print(train_data.data) # 元组（Tuple）中两个 元素
+    data, clazz = train_data[0]
+    print(data)
+    print(clazz)
+    labels = set([])
+    #  set([clazz for  img, clazz in train_data]) 等于如下
+    for data_item,clazz_item in train_data:
+        labels.add(clazz_item)
+    print(labels) # 判断所有 分类共计 10 种 ： {0, 1, 2, 3, 4, 5, 6, 7, 8, 9}
+
+#参考流程
+# X 输入 shape（，784）# 784个特征 （28*28）
+# 隐藏层 shape（784，64） # 神经元数量 ，参数矩阵 ， 线性层、 sigmoid
+# 隐藏层 shape（64，） # 偏置 bias
+# 输出层 shape (64,10) # 参数矩阵
+# 输出层 shape (10，) # 偏置 bias
+# Y 输出 shape（，10）# 10个类别
+class TorchNeuralNet(nn.Module):
+    def __init__(self):
+        super(TorchNeuralNet, self).__init__()
+        self.flatten = nn.Flatten() # 展开所有张量为 1 维
+        # Sequential 顺序模型
+        self.linear_Sigmoid_Sequential = nn.Sequential(
+            nn.Linear(784, 784), # 神经元数量
+            nn.Softmax(dim=1),
+            # nn.Sigmoid(),
+            nn.Linear(784, 128),
+            # nn.ReLU(),
+            nn.Linear(128, 64),
+            # nn.ReLU(),
+            nn.Linear(64, 10),
+            # nn.Softmax(dim=1)
+        )
+    def forward(self, x):
+        x = self.flatten(x)
+        logits = self.linear_Sigmoid_Sequential(x)
+        return logits
+
+def check_device():
+    if (torch.backends.mps.is_available()):
+        device = torch.device('mps')
+    elif (torch.cuda.is_available()):
+        device = torch.device('cuda')
+    else:
+        device = torch.device('cpu')
+    print(f'use {device} ')
+    return device
+
+
+# def predict(data):
+#     output = model(data.reshape(-1, 784))
+#     print(f"预测 = {output}")
+
+
+def test():
+
+    #测试
+    correct = 0
+    total = 0
+    model = TorchNeuralNet().to(device)
+    with torch.no_grad():
+        for data, target in test_data:
+            data = data.to(device)
+            target = target.to(device)
+            output = model(data.reshape(-1,784))
+            _, predicted = torch.max(output.data, 1) # 返回每行最大
+            total += target.size(0)
+            correct += (predicted == target).sum().item()
+        print(f'Accuracy : {correct/total * 100}%')
+
+if __name__ == '__main__':
+
+    # data_usage() # 测试数据
+
+    EPOCHS = 10
+    BATCH_SIZE = 2048
+    # LR = 1e-3
+    LR = 0.01
+    train_data, test_data = load_DataLoader(BATCH_SIZE)
+    device = check_device()
+    model = TorchNeuralNet().to(device)
+    loss_function = nn.CrossEntropyLoss().to(device)
+    optimizer = torch.optim.SGD(model.parameters(), lr=LR)
+
+    for epoch in range(EPOCHS):
+        for x, y  in train_data:
+            x = x.to(device)
+            y = y.to(device)
+            #forward
+            pred_y=model(x.reshape(-1,784))
+            #loss
+            loss = loss_function(pred_y,y) #交叉熵损失函数
+            #更新参数
+            optimizer.zero_grad() # 模型梯度参数清空
+            loss.backward()
+            optimizer.step()
+
+        print(f'epoch {epoch}, loss {loss.item()}')
+
+    test()
+

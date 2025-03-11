@@ -30,7 +30,12 @@ batch_size = 64
 train_loader = DataLoader(train_data, batch_size=batch_size, shuffle=True)
 test_loader = DataLoader(test_data, batch_size=batch_size)
 
-# img,clzz = train_data[12000]
+# img_data = datasets.FashionMNIST(
+#     root='../data',
+#     train=True, # 训练集
+#     download=True,
+# )
+# img,clzz = img_data[12000]
 # print(img)
 # plt.imshow(img,cmap='gray') # img是一个PIL.Image对象(Python原始数据) ,  !!! transform=transforms.ToTensor()
 # plt.show()

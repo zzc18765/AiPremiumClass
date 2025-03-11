@@ -1,28 +1,27 @@
 import torch
 from torch import nn
-from torch.xpu import device
 from torchvision import datasets
 from torchvision import transforms
 
 
 
 # 数据集加载
-def data_load(BATCH_SIZE):
-    train_data = datasets.FashionMNIST(
+def data_load(batch_size):
+    trainData = datasets.FashionMNIST(
         root='../data',
         train=True, # 训练集
         download=True,
         transform=transforms.ToTensor()  # 原始数据转换成 张量
     )
-    train_loader = torch.utils.data.DataLoader(train_data, batch_size=BATCH_SIZE, shuffle=True)
+    train_loader = torch.utils.data.DataLoader(trainData, batch_size=batch_size, shuffle=True)
 
-    test_data = datasets.FashionMNIST(
+    testData = datasets.FashionMNIST(
         root='../data',
         train=False, # 测试集
         download=True,
         transform=transforms.ToTensor()
     )
-    test_loader = torch.utils.data.DataLoader(test_data, batch_size=BATCH_SIZE)
+    test_loader = torch.utils.data.DataLoader(testData, batch_size=batch_size)
 
     return train_loader , test_loader
 
@@ -78,7 +77,7 @@ if __name__ == '__main__':
             loss.backward() # 梯度计算
             optimizer.step() # 更新参数
             #
-        print(f'Epoch : {epoch} ,  Loss : {loss.item()}')
+            print(f'Epoch : {epoch} ,  Loss : {loss.item()}')
 
 
     #测试
