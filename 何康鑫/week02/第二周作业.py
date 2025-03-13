@@ -49,3 +49,22 @@ for epoch in range(epochs):
     if epoch % 100 == 0:
         acc = np.mean(np.round(y_hat) == y_train)
         print(f"Epoch {epoch}, Loss: {loss:.4f}, Acc: {acc:.4f}")
+
+np.save("theta.npy", theta)
+np.save("bias.npy", bias)
+np.save("X_test.npy",X_test)
+np.save("Y_test.npy",Y_test)
+
+theta = np.load("theta.npy")
+bias = np.load("bias.npy")
+
+def forward(x, theta, bias):
+    z = np.dot(theta,x.T)+bias
+    y_hat=1/(1+np.exp(-z))
+    return y_hat
+
+idx = np.random.randint(len(X_test))
+x = x_test[idx]
+y= y_test[idx]
+predict=np.round(forward(x, theta, bias))
+print(f"y: {y}, 预测结果: {predict}")
