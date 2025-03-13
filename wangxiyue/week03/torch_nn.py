@@ -31,8 +31,8 @@ def load_FashionMNIST():
 
 def load_KMNIST():
     transform_train = transforms.Compose([
-        transforms.RandomRotation(15),
-        transforms.RandomAffine(15,translate=(0.15,0.15)),
+        transforms.RandomRotation(16),
+        transforms.RandomAffine(7,translate=(0.13,0.11)),
         transforms.ToTensor()
     ])
 
@@ -140,21 +140,25 @@ def Obs(times,EPOCHS,BATCH_SIZE,history_epoch,history_loss,history_acc):
 
 
 
+def test_torch():
+    torch.fit
+
+
 
 if __name__ == '__main__':
 
     # data_usage() # 测试数据
 
     EPOCHS = 100
-    BATCH_SIZE =128
+    BATCH_SIZE =1024
     # LR = 1e-3
-    LR = 0.085
+    LR = 0.083
     train_data, test_data = load_DataLoader(load_KMNIST(),BATCH_SIZE)
     # train_data, test_data = load_DataLoader(load_FashionMNIST(), BATCH_SIZE)
     device = check_device()
     model = TorchNeuralNet().to(device)
     loss_function = nn.CrossEntropyLoss().to(device)
-    optimizer = torch.optim.SGD(model.parameters(), lr=LR,momentum=0.85)
+    optimizer = torch.optim.SGD(model.parameters(), lr=LR,momentum=0.87)
     model.train()
     history_loss = []
     history_epoch = []
