@@ -11,8 +11,21 @@ from torch.utils.data import DataLoader
 from torchvision import datasets,transforms
 from matplotlib import pyplot as plt
 import os
-os.environ["CUDA_VISIBLE_DEVICES"] = "0"  # 指定在 gpu上工作
-torch.set_default_device('cuda')
+# os.environ["CUDA_VISIBLE_DEVICES"] = "0"  # 指定在 gpu上工作
+# torch.set_default_device('cuda')
+
+
+def check_device():
+    if (torch.backends.mps.is_available()):
+        device = torch.device('mps')
+    elif (torch.cuda.is_available()):
+        device = torch.device('cuda')
+    else:
+        device = torch.device('cpu')
+    print(f'use {device} ')
+    return device
+# check device
+device = check_device()
 
 def load_FashionMNIST():
     trainData = datasets.FashionMNIST(
@@ -54,11 +67,10 @@ def load_KMNIST():
 def load_DataLoader(MNIST ,BATCH_SIZE):
     train_data, test_data = MNIST
     #使用数据加载器 批量加载
-    # print(train_data, test_data)
     train_data = DataLoader(train_data, batch_size=BATCH_SIZE,shuffle=True,
-                            generator=torch.Generator(device='cuda'))
+                            generator=torch.Generator(device=device))
     test_data = DataLoader(test_data, batch_size=BATCH_SIZE ,
-                           generator=torch.Generator(device='cuda'))
+                           generator=torch.Generator(device=device))
     return train_data, test_data
 
 # train,test = load_DataLoader(BATCH_SIZE=1)
@@ -111,15 +123,7 @@ class TorchNeuralNet(nn.Module):
         logits = self.linear_Sigmoid_Sequential(x)
         return logits
 
-def check_device():
-    if (torch.backends.mps.is_available()):
-        device = torch.device('mps')
-    elif (torch.cuda.is_available()):
-        device = torch.device('cuda')
-    else:
-        device = torch.device('cpu')
-    print(f'use {device} ')
-    return device
+
 
 
 # def predict(data):
@@ -155,7 +159,7 @@ if __name__ == '__main__':
     LR = 0.083
     train_data, test_data = load_DataLoader(load_KMNIST(),BATCH_SIZE)
     # train_data, test_data = load_DataLoader(load_FashionMNIST(), BATCH_SIZE)
-    device = check_device()
+
     model = TorchNeuralNet().to(device)
     loss_function = nn.CrossEntropyLoss().to(device)
     optimizer = torch.optim.SGD(model.parameters(), lr=LR,momentum=0.87)
