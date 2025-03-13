@@ -24,8 +24,8 @@ def loss_function(y_hat, y):
 
 # 梯度计算函数
 def calc_gradient(y_hat, y, x):
-    # 特征数
-    m = x.shape[-1]
+    # 样本数量
+    m = x.shape[0]
     # 权重参数梯度
     delta_w = np.dot(y_hat - y, x)/m
     # 偏置梯度
