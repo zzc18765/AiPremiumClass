@@ -62,3 +62,4 @@ for epoch in range(epochs_CON):
         optimizer_CON.step()  # 更新参数
         
     print(f"Epoch:{epoch} Loss: {loss.item()}")
+print("完成")
