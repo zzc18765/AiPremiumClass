@@ -26,6 +26,7 @@ def check_device():
     return device
 # check device
 device = check_device()
+torch.set_default_device(device)
 
 def load_FashionMNIST():
     trainData = datasets.FashionMNIST(
@@ -121,6 +122,7 @@ class TorchNeuralNet(nn.Module):
     def forward(self, x):
         x = self.flatten(x)
         logits = self.linear_Sigmoid_Sequential(x)
+        print(logits.shape)
         return logits
 
 
