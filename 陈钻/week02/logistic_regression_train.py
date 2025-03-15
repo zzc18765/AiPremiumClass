@@ -40,6 +40,7 @@ def train_model(train_sample_set, train_category_set, theta, bias, learning_rate
         y_hat = forward_propagation(train_sample_set, theta, bias)
         loss = np.mean( loss_function(train_category_set, y_hat) )
         if epoch % 100 == 0:
+            print(loss_function(train_category_set, y_hat))
             print(f"epoch: {epoch}, loss: {loss}")
         
         d_theta, d_bias = compute_gradient(train_sample_set, train_category_set, y_hat)
