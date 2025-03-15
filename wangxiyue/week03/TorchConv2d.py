@@ -155,7 +155,7 @@ for epoch in range(Epochs):
     writer.add_scalar('test_loss_avg',np.average(test_loss),total_test_step)
     writer.add_scalar('test_acc', acc/test_data_size, total_test_step)
     total_test_step += 1
-    torch.save(model,f'week02_conv2d_model_gpu{epoch+1}.pth')
+    torch.save(model,f'../data/model/week02_conv2d_model_gpu{epoch+1}.pth')
     writer.flush()
 writer.close()
 
