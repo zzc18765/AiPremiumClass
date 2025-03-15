@@ -9,7 +9,7 @@ from torchvision.transforms import ToTensor, Lambda, Compose
 # hyperparameters
 learning_rate = 1e-2
 batch_size = 64
-epochs = 30
+epochs = 50
 
 
 training_data = datasets.FashionMNIST(

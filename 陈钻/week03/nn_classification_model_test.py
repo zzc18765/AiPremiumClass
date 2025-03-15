@@ -7,9 +7,7 @@ from torchvision.transforms import ToTensor
 
 
 # hyperparameters
-learning_rate = 1e-2
 batch_size = 64
-epochs = 5
 
 testing_data = datasets.FashionMNIST(
     root="data", 
