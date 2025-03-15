@@ -1,3 +1,5 @@
+import os
+import shutil
 import time
 
 import numpy as np
@@ -36,18 +38,16 @@ class color:
 
 def loadData(batch_size):
     transform_train = transforms.Compose([
-        # transforms.RandomRotation(16),
-        # transforms.RandomAffine(7, translate=(0.13, 0.11)),
         transforms.RandomRotation(16),
-        transforms.RandomAffine(7, translate=(0.13, 0.11)),
+        transforms.RandomAffine(7, translate=(0.11, 0.13), shear=0.16),
         transforms.ToTensor()
     ])
     train_datasets = datasets.KMNIST( root='../data',train=True,download=True,transform=transform_train)
     test_datasets = datasets.KMNIST( root='../data',train=False,download=True,transform=ToTensor())
-    train_data = DataLoader(train_datasets, batch_size=batch_size, shuffle=True,
-                            num_workers=10,pin_memory=True,persistent_workers = True,prefetch_factor = 80)#,generator=torch.Generator(device=device))
-    test_data = DataLoader(test_datasets, batch_size=batch_size,
-                           num_workers=10,pin_memory=True,persistent_workers = True,prefetch_factor = 80)#, generator=torch.Generator(device=device))
+    train_data = DataLoader(train_datasets, batch_size=batch_size, shuffle=True)
+                            # ,num_workers=8,pin_memory=True,persistent_workers = True,prefetch_factor = 4)#,generator=torch.Generator(device=device))
+    test_data = DataLoader(test_datasets, batch_size=batch_size)
+                           # ,num_workers=8,pin_memory=True,persistent_workers = True,prefetch_factor = 4)#, generator=torch.Generator(device=device))
     return train_data, test_data
 
 # Conv2d model
@@ -58,59 +58,31 @@ class Conv2dNet(nn.Module):
 
         self.flatten = nn.Flatten() # 展开所有张量为 1 维
         self.conv2d_calc = nn.Sequential(
-            nn.Conv2d(1, 120, kernel_size=(3, 3), padding=1, stride=1),
+            nn.Conv2d(1, 240, kernel_size=(3, 3), padding=1, stride=1),
 
-            nn.SiLU(),
-            nn.MaxPool2d(2, 2),
-            nn.Conv2d(120, 120, kernel_size=(3, 3), padding=1, stride=1),
+            nn.ReLU(),
+            nn.MaxPool2d(3,2),
+            nn.Conv2d(240, 240, kernel_size=(3, 3), padding=1, stride=1),
 
-            nn.SiLU(),
-            nn.MaxPool2d(2, 2),
-            nn.Conv2d(120, 60, kernel_size=(3, 3), padding=1, stride=1),
+            nn.ReLU(),
+            nn.MaxPool2d(3,2),
+            nn.Conv2d(240, 60, kernel_size=(3, 3), padding=1, stride=1),
 
             nn.Flatten(),
-            nn.Linear(2940, 1024),
+            nn.Linear(2160, 1024),
 
-            nn.SiLU(),
+            nn.ReLU(),
             nn.Linear(1024, 512),
-            nn.SiLU(),
+            nn.ReLU(),
             nn.Linear(512, 128),
-            nn.SiLU(),
+            nn.ReLU(),
             nn.Linear(128, 10),
         )
 
-        self.conv1 = nn.Conv2d(1, 120, kernel_size=(3,3), padding=1,stride=1)
-        self.relu1 = nn.Softsign()
-        self.pool1 = nn.MaxPool2d(2, 2)
-
-        self.conv2 = nn.Conv2d(120, 120, kernel_size=(3,3), padding=1,stride=1)
-        self.relu2 = nn.Softsign()
-        self.pool2 = nn.MaxPool2d(2, 2)
-        self.conv3 = nn.Conv2d(120, 60, kernel_size=(3,3), padding=1,stride=1)
-        self.relu3 = nn.Softsign()
-        self.pool3 = nn.MaxPool2d(2, 2)
-        # self.line1 = nn.Linear(784, 51)
-        self.line1 = nn.Linear(2940, 1024)
-        self.relu4 = nn.Softsign()
-        self.line1 = nn.Linear(1024, 512)
-        self.line1 = nn.Linear(512, 128)
-        self.line2 = nn.Linear(128, 10)
 
     def forward(self, x):
         y = self.conv2d_calc(x)
         return y
-
-    # def forward( self,x):
-    #         x = self.relu1(self.conv1(x))
-    #         x = self.pool1(x)
-    #
-    #         x = self.relu2(self.conv2(x))
-    #         x= self.pool2(x)
-    #
-    #         x = self.relu3(self.conv3(x))
-    #         x = self.flatten(x)
-    #         x = self.line1(x)
-    #         return x
 
 model = Conv2dNet()
 model.to(device)
@@ -119,15 +91,20 @@ loss_fc = nn.CrossEntropyLoss()
 ############################# 超参 #################################
 
 Learning_Rate = 0.005
-Epochs = 300
+Epochs = 20
 BATCH_SIZE =60
 Optimizer = torch.optim.SGD(model.parameters(), lr=Learning_Rate,momentum=0.85)
 
-###################################################################
+############################ 配置信息 ################################
+LOG_DIR = '../data/logs_LeakReLU'
+if os.path.exists(LOG_DIR):
+    shutil.rmtree(LOG_DIR)
 
 total_train_step = 0
 total_test_step = 0
-writer = SummaryWriter('../data/logs')
+
+writer = SummaryWriter(LOG_DIR)
+
 start_time = time.time()
 
 
@@ -151,7 +128,7 @@ for epoch in range(Epochs):
         Optimizer.step()
         train_loss.append(loss.item())
         total_train_step += 1
-        if total_train_step % 500 == 0:
+        if total_train_step % 100 == 0:
             end_time = time.time()
             print(f'Epoch:{epoch+1}/{Epochs} , 训练次数:{total_train_step} , Loss:{np.average(train_loss):.6f}, 耗时: {(end_time - start_time):.1f} 秒')
 
@@ -169,6 +146,8 @@ for epoch in range(Epochs):
             test_loss.append(loss_test.item())
             acc += (pred_test.argmax(1) == labels).sum().item()
             test_data_size += labels.size(0)
+
+            # writer.add_image('Un Pred Img',data[~torch.isin(labels, pred_test.argmax(1))])
             # total_test_acc += acc
 
     print(f'acc={acc},test_data_size={test_data_size} | 测试集整体 ->{color.RED} Loss avg:{np.average(test_loss):.6f} , Acc :{(acc/test_data_size*100):.3f}% {color.END}')
@@ -177,6 +156,7 @@ for epoch in range(Epochs):
     writer.add_scalar('test_acc', acc/test_data_size, total_test_step)
     total_test_step += 1
     torch.save(model,f'week02_conv2d_model_gpu{epoch+1}.pth')
+    writer.flush()
 writer.close()
 
 
