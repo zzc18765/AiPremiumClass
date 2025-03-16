@@ -21,18 +21,20 @@ plt.show()
 labels = set([clz for img,clz in train_dataset])
 print(labels)
 
-LR = 1e-1
+# 超参数变化尝试
+LR = 1e-1 #1e-2 1e-3
 epoches = 20
-batch_size =256
+batch_size =256 #128 512
 
 train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
 
+# 此处尝试使用sigmoid，以及参数量大小当前效果相对最佳
 model = nn.Sequential(
     nn.Linear(784, 128),  # 输入层到第一个隐藏层
-    nn.Sigmoid(),         # 激活函数
-    nn.Linear(128, 64),   # 第一个隐藏层到第二个隐藏层
-    nn.Sigmoid(),         # 激活函数
-    nn.Linear(64, 10)    # 第二个隐藏层到输出层
+    nn.ReLU(),         # 激活函数
+    nn.Linear(128, 512),   # 第一个隐藏层到第二个隐藏层
+    nn.ReLU(),         # 激活函数
+    nn.Linear(512, 10)    # 第二个隐藏层到输出层
 )
 
 # 损失函数
