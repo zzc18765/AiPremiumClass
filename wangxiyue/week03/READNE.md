@@ -27,6 +27,11 @@
 
 
 # 作业
+torch.nn.Modellist([
+
+])
+->
+Class CustomModel(nn.Module):
 
 
 

@@ -50,6 +50,7 @@ def loadData(batch_size):
                            # ,num_workers=8,pin_memory=True,persistent_workers = True,prefetch_factor = 4)#, generator=torch.Generator(device=device))
     return train_data, test_data
 
+
 # Conv2d model
 class Conv2dNet(nn.Module):
 
