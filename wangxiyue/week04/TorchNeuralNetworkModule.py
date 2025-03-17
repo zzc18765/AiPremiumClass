@@ -38,7 +38,7 @@ def check_device():
 #
 def load_data_olivettiface():
     x,y = fetch_olivetti_faces(data_home='../data/face_data',return_X_y=True)
-    return train_test_split(x,y,test_size=0.2,shuffle=True)
+    return train_test_split(x,y,test_size=0.2,random_state=22,shuffle=True)
 
 def data_loader(batch_size):
     transform_train = transforms.Compose([
@@ -51,17 +51,15 @@ def data_loader(batch_size):
     ######
 
     xTrain, xTest, yTrain, yTest = load_data_olivettiface()
-    print(xTrain.shape, xTest.shape, yTrain.shape, yTest.shape)
+    print('load data ==> ',xTrain.shape, xTest.shape, yTrain.shape, yTest.shape)
     train_datasets = OlivettiDataset(xTrain,yTrain , transform=transform_train)
     test_datasets = OlivettiDataset(xTest, yTest)
 
-    train_data = DataLoader(train_datasets, batch_size=batch_size, shuffle=True
-                            , num_workers=8, pin_memory=True, persistent_workers=True,
-                            prefetch_factor=4)  # ,generator=torch.Generator(device=device))
-    test_data = DataLoader(test_datasets, batch_size=batch_size, shuffle=True
-                            , num_workers=8, pin_memory=True, persistent_workers=True,
-                            prefetch_factor=4)  # ,generator=torch.Generator(device=device))
-    return train_data, test_data
+    trainData = DataLoader(train_datasets, batch_size=batch_size, shuffle=True
+                            ,generator=torch.Generator(device=device))
+    testData = DataLoader(test_datasets, batch_size=batch_size, shuffle=True
+                            ,generator=torch.Generator(device=device))
+    return trainData, testData
 
 class OlivettiDataset(Dataset):
     def __init__(self,x,y,transform=None):
@@ -90,26 +88,36 @@ class OlivettiDataset(Dataset):
 class TorchNeuralNetworkModule(nn.Module):
     def __init__(self):
         super(TorchNeuralNetworkModule,self).__init__()
-        self.linear1 = nn.Linear(4096, 512)
-        self.batchnorm1d_1 = nn.BatchNorm1d(512)
-        self.linear2 = nn.Linear(512, 512)
-        self.batchnorm1d_2 = nn.BatchNorm1d(512)
-        self.linear3 = nn.Linear(512, 10)
-        self.drop = nn.Dropout1d(p=0.1)
-        self.act = nn.ReLU()
+        self.calc_model = nn.Sequential(
+
+            nn.Linear(4096, 4096),
+
+            nn.BatchNorm1d(4096),
+            nn.ReLU(),
+            nn.MaxPool1d(2, 2),
+            nn.Linear(2048, 1024),
+
+            nn.BatchNorm1d(1024),
+            nn.ReLU(),
+            nn.MaxPool1d(2, 2),
+            nn.Linear(512, 256),
+
+            nn.BatchNorm1d(256),
+            nn.ReLU(),
+            nn.MaxPool1d(2, 2),
+            nn.Linear(128, 64),
+
+            nn.BatchNorm1d(64),
+            nn.ReLU(),
+            nn.Linear(64, 40),
+
+
+        )
+
 
     def forward(self, x):
-        x = self.linear1(x)
-        x = self.batchnorm1d_1(x)
-
-        x = self.linear2(x)
-        x = self.batchnorm1d_2(x)
-
-        x = self.act(x)
-        x = self.drop(x)
-
-        x = self.linear3(x)
-        return x
+        y =self.calc_model(x)
+        return y
 
 class color:
     PURPLE = '\033[95m'
@@ -123,7 +131,7 @@ class color:
     UNDERLINE = '\033[4m'
     END = '\033[0m'
 
-loss_fc = nn.CrossEntropyLoss()
+# loss_fc = nn.CrossEntropyLoss()
 
 if __name__ == '__main__':
 
@@ -131,14 +139,17 @@ if __name__ == '__main__':
     device = check_device()
     torch.set_default_device(device)
 
-    print('model test!!!')
+    print('model initialized')
     model = TorchNeuralNetworkModule()  # make model obj
-    # loss_fc = nn.CrossEntropyLoss()
+    model.to(device)
+    loss_fc = nn.CrossEntropyLoss()
     ############################# 超参 #################################
     Learning_Rate = 0.005
-    Epochs = 20
-    BATCH_SIZE = 10
+    Epochs = 50
+    BATCH_SIZE = 40
     Optimizer = torch.optim.SGD(model.parameters(), lr=Learning_Rate, momentum=0.85)
+    # Optimizer = torch.optim.AdamW(model.parameters(),lr=Learning_Rate , betas=(0.8,0.9),weight_decay=0.01)
+
     ############################ 配置信息 ################################
     LOG_DIR = '../data/logs_olivetti'
     if os.path.exists(LOG_DIR):
@@ -153,14 +164,11 @@ if __name__ == '__main__':
     train_data, test_data = data_loader(BATCH_SIZE)
     train_data_size = len(train_data)
     test_data_size = len(test_data)
-    model.to(device)
+
     for epoch in range(Epochs):
         train_loss = []
         model.train()
         for train_x, train_y in train_data:
-            print(train_x.shape)
-            print(train_y)
-
             train_x = train_x.to(device)
             train_y = train_y.to(device)
             pred = model(train_x)
@@ -170,7 +178,7 @@ if __name__ == '__main__':
             Optimizer.step()
             train_loss.append(loss.item())
             total_train_step += 1
-            if total_train_step % 100 == 0:
+            if total_train_step % 10 == 0:
                 end_time = time.time()
                 print(
                     f'Epoch:{epoch + 1}/{Epochs} , 训练次数:{total_train_step} , Loss:{np.average(train_loss):.6f}, 耗时: {(end_time - start_time):.1f} 秒')
@@ -193,13 +201,12 @@ if __name__ == '__main__':
                 # writer.add_image('Un Pred Img',data[~torch.isin(labels, pred_test.argmax(1))])
                 # total_test_acc += acc
 
-        print(
-            f'acc={acc},test_data_size={test_data_size} | 测试集整体 ->{color.RED} Loss avg:{np.average(test_loss):.6f} , Acc :{(acc / test_data_size * 100):.3f}% {color.END}')
+        print(f'acc={acc},test_data_size={test_data_size} | 测试集整体 ->{color.RED} Loss avg:{np.average(test_loss):.6f} , Acc :{(acc / test_data_size * 100):.3f}% {color.END}')
         print('')
         writer.add_scalar('test_loss_avg', np.average(test_loss), total_test_step)
         writer.add_scalar('test_acc', acc / test_data_size, total_test_step)
         total_test_step += 1
-        torch.save(model, f'../data/model/week02_conv2d_model_gpu{epoch + 1}.pth')
+        torch.save(model, f'../data/model/torch_nn_module_{epoch + 1}.pth')
         writer.flush()
     writer.close()
 
