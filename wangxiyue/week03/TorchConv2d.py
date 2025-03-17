@@ -44,10 +44,10 @@ def loadData(batch_size):
     ])
     train_datasets = datasets.KMNIST( root='../data',train=True,download=True,transform=transform_train)
     test_datasets = datasets.KMNIST( root='../data',train=False,download=True,transform=ToTensor())
-    train_data = DataLoader(train_datasets, batch_size=batch_size, shuffle=True)
-                            # ,num_workers=8,pin_memory=True,persistent_workers = True,prefetch_factor = 4)#,generator=torch.Generator(device=device))
-    test_data = DataLoader(test_datasets, batch_size=batch_size)
-                           # ,num_workers=8,pin_memory=True,persistent_workers = True,prefetch_factor = 4)#, generator=torch.Generator(device=device))
+    train_data = DataLoader(train_datasets, batch_size=batch_size, shuffle=True
+                             ,num_workers=8,pin_memory=True,persistent_workers = True,prefetch_factor =4)#,generator=torch.Generator(device=device))
+    test_data = DataLoader(test_datasets, batch_size=batch_size
+                            ,num_workers=8,pin_memory=True,persistent_workers = True,prefetch_factor = 4)#, generator=torch.Generator(device=device))
     return train_data, test_data
 
 
@@ -61,21 +61,27 @@ class Conv2dNet(nn.Module):
         self.conv2d_calc = nn.Sequential(
             nn.Conv2d(1, 240, kernel_size=(3, 3), padding=1, stride=1),
 
+            nn.BatchNorm2d(240),
             nn.ReLU(),
             nn.MaxPool2d(3,2),
-            nn.Conv2d(240, 240, kernel_size=(3, 3), padding=1, stride=1),
+            nn.Conv2d(240, 240, kernel_size=(3, 3), padding=2, stride=1),
 
+            nn.BatchNorm2d(240),
             nn.ReLU(),
             nn.MaxPool2d(3,2),
             nn.Conv2d(240, 60, kernel_size=(3, 3), padding=1, stride=1),
 
+            nn.BatchNorm2d(60),
             nn.Flatten(),
-            nn.Linear(2160, 1024),
+            nn.Linear(2940, 1024),
 
+            nn.BatchNorm1d(1024),
             nn.ReLU(),
             nn.Linear(1024, 512),
+            nn.BatchNorm1d(512),
             nn.ReLU(),
             nn.Linear(512, 128),
+            nn.BatchNorm1d(128),
             nn.ReLU(),
             nn.Linear(128, 10),
         )
@@ -105,7 +111,6 @@ total_train_step = 0
 total_test_step = 0
 
 writer = SummaryWriter(LOG_DIR)
-
 start_time = time.time()
 
 
