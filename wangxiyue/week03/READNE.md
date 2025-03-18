@@ -27,6 +27,11 @@
 
 
 # 作业
+
+`torch.set_default_device(device)`
+
+`sudo nvidia-smi -pm 1`
+
 torch.nn.Modellist([
 
 ])
