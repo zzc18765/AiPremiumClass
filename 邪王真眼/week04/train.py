@@ -47,7 +47,7 @@ class CNN(nn.Module):
 def main():
     # hyperparameter
     lr = 0.0001
-    epochs = 10
+    epochs = 20
     bs = 4
     weight_decay = 1e-4
 
@@ -78,7 +78,13 @@ def main():
     # model
     model = CNN().to(device)
     criterion = nn.CrossEntropyLoss()
-    optimizer = optim.Adam(model.parameters(), lr=lr, weight_decay=weight_decay)
+    
+    optimizer_sgd = optim.SGD(model.parameters(), lr=10 * lr, momentum=0.9, nesterov=True)
+    optimizer_adam = optim.Adam(model.parameters(), lr=lr, weight_decay=weight_decay)
+    optimizer_rmsprop = optim.RMSprop(model.parameters(), lr=lr, weight_decay=weight_decay, alpha=0.99, eps=1e-08)
+    optimizer_adamw = optim.AdamW(model.parameters(), lr=lr, weight_decay=weight_decay)
+
+    optimizer = optimizer_adam
 
     # train
     max_correct = 0
@@ -127,7 +133,7 @@ def main():
         model.train()
 
     # save model
-    save_path = f"./邪王真眼/week03//olivetti_CNN_acc_{100.*max_correct/total:.2f}.pth"
+    save_path = f"./邪王真眼/week04/olivetti_CNN_acc_{100.*max_correct/total:.2f}.pth"
     dir_path = os.path.dirname(save_path)
     if not os.path.exists(dir_path):
         os.makedirs(dir_path)
