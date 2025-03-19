@@ -4,6 +4,12 @@
 # 2 结合归一化和正则化优化网络模型 ，观察对比loss结果
 # 3 尝试不同optimizer 训练模型，对比loss结果
 # 4 注册kaggle 并尝试激活Accelerator 使用gpu加速
+######
+## 解:  归一化采用 BatchNorm1d（一维） ，正则化采用 torch.optim.SGD或 torch.optim.AdamW 增加权重衰减 weight_decay，Adaw 不衰减
+##      scikit-learn调用 fetch_olivetti_faces 下载数据 ， 构建 OlivettiDataset ，方便DataLoader 批量加载，
+##      使用加入 Im参数， 在验证时捕获，为识别的图片，加入 tensorboard 用于分析
+##
+## 问题： 判断识别错误的图片存在问题
 ###########################
 import os
 import shutil
@@ -113,6 +119,7 @@ class TorchNeuralNetworkModule(nn.Module):
 
             nn.Linear(4096, 32768),
 
+            #归一化
             nn.BatchNorm1d(32768),
             nn.ReLU(),
             nn.Linear(32768, 8192),
@@ -166,7 +173,9 @@ if __name__ == '__main__':
     Learning_Rate = 0.005
     Epochs = 30
     BATCH_SIZE = 64
-    # Optimizer = torch.optim.SGD(model.parameters(), lr=Learning_Rate, momentum=0.9)
+
+    #正则化 weight_decay = 1e-3
+    #Optimizer = torch.optim.SGD(model.parameters(), lr=Learning_Rate, weight_decay= 0.001 , momentum=0.9)
     Optimizer = torch.optim.AdamW(model.parameters() )
 
     ############################ 配置信息 ################################
@@ -216,7 +225,6 @@ if __name__ == '__main__':
                 test_loss.append(loss_test.item())
                 acc += (pred_test.argmax(1) == labels).sum().item()
                 test_data_size += labels.size(0)
-                torch.isnan()
                 cant_img = img[~torch.isin(labels, pred_test.argmax(1))]
                 print(len(cant_img))
                 # cant_img = cant_img.reshape(-1,1,64,64)
