@@ -11,7 +11,7 @@ class SimplNN(nn.Module):
         self.fc2 = nn.Linear(512,256)
         self.bn2= nn.BatchNorm1d(256) # 批量归一化层
         self.fc3 = nn.Linear(256, 40) # 输出层
-        #self.dropout = nn.Dropout(p=0.5) # Dropout 正则化
+        self.dropout = nn.Dropout(p=0.5) # Dropout 正则化
 
 
     # 定义前向传播
@@ -19,11 +19,11 @@ class SimplNN(nn.Module):
         x = self.fc1(x) # 第一层全连接
         x = self.bn1(x) # 批量归一化
         x = torch.relu(x) # relu激活函数
-        #x = self.dropout(x) # Dropout 正则化
+        x = self.dropout(x) # Dropout 正则化
         x = self.fc2(x) # 第二层全连接
         x = self.bn2(x) # 批量归一化
         x = torch.relu(x) # relu激活函数
-        #x = self.dropout(x) # Dropout 正则化
+        x = self.dropout(x) # Dropout 正则化
         x = self.fc3(x) # 输出层
         return x
     

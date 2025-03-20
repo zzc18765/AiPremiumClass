@@ -21,10 +21,6 @@ from nn_module import SimplNN
 if __name__ == '__main__':
     # 加载数据集
 
-    # data = scipy.io.loadmat('./党金虎/week04/scikit_learn_data/olivettifaces.mat')
-    # X = data['faces'].T
-    # y =  np.arange(40).repeat(10)  # 40 个人，每个人 10 张照片
-
     faces = fetch_olivetti_faces(data_home='./党金虎/week04/scikit_learn_data')
     X = faces.data # (400, 4096) 400张图片，    每张图片64*64=4096个像素点
     y = faces.target # (400,) 400个标签
@@ -50,8 +46,9 @@ if __name__ == '__main__':
 
     # 定义不同优化器
     optimizers = {
-        'SGD': torch.optim.SGD(model.parameters(), lr=0.01),
-        'Adam': torch.optim.Adam(model.parameters(), lr=0.01),
+        'SGD': torch.optim.SGD(model.parameters(), lr=0.001),
+        #'Adam': torch.optim.Adam(model.parameters(), lr=0.01),
+         'Adam': torch.optim.Adam(model.parameters(),lr=0.01),
     }
 
     # 训练和测试
