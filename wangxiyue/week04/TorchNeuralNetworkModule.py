@@ -117,16 +117,16 @@ class TorchNeuralNetworkModule(nn.Module):
         super(TorchNeuralNetworkModule,self).__init__()
         self.calc_model = nn.Sequential(
 
-            nn.Linear(4096, 32768),
+            nn.Linear(4096, 2048),
 
-            #归一化
-            nn.BatchNorm1d(32768),
-            nn.ReLU(),
-            nn.Linear(32768, 8192),
-
-            nn.BatchNorm1d(8192),
-            nn.ReLU(),
-            nn.Linear(8192, 2048),
+            # #归一化
+            # nn.BatchNorm1d(32768),
+            # nn.ReLU(),
+            # nn.Linear(32768, 8192),
+            #
+            # nn.BatchNorm1d(8192),
+            # nn.ReLU(),
+            # nn.Linear(8192, 2048),
 
             nn.BatchNorm1d(2048),
             nn.ReLU(),
@@ -171,7 +171,7 @@ if __name__ == '__main__':
     loss_fc = nn.CrossEntropyLoss()
     ############################# 超参 #################################
     Learning_Rate = 0.005
-    Epochs = 30
+    Epochs = 50
     BATCH_SIZE = 64
 
     #正则化 weight_decay = 1e-3
@@ -225,17 +225,14 @@ if __name__ == '__main__':
                 test_loss.append(loss_test.item())
                 acc += (pred_test.argmax(1) == labels).sum().item()
                 test_data_size += labels.size(0)
-                cant_img = img[~torch.isin(labels, pred_test.argmax(1))]
-                print(len(cant_img))
-                # cant_img = cant_img.reshape(-1,1,64,64)
-                for index , imt in enumerate(cant_img): # bach size 60
-                    writer.add_image(f'Un_Pred_Img_epoch:/{epoch+1}/TestSize:{ii+1}/BatchSize:{index+1}',imt,dataformats='HW',global_step=index+1)
-                    writer.flush()
-                    print(f'Un_Pred_Img_epoch:/{epoch+1}/TestSize:{ii+1}/BatchSize:{index+1}')
-
-
-                # total_test_acc += acc
-
+                #获取为识别的照片
+                cant_img +=img[labels!=pred_test.argmax(1)]
+                #下面这个取反的逻辑错误
+                ### cant_img +=img[~torch.isin(labels,pred_test.argmax(1))]
+            for index, imt in enumerate(cant_img):  # bach size 60
+                writer.add_image(f'Un_Pred_Img/epoch:{epoch + 1}/{index + 1}.img', imt,
+                                     dataformats='HW', global_step=index + 1)
+                writer.flush()
         print(f'acc={acc},test_data_size={test_data_size} | 测试集整体 ->{color.RED} Loss avg:{np.average(test_loss):.6f} , Acc :{(acc / test_data_size * 100):.3f}% {color.END}')
         print('')
         # writer.add_image('dont predict img',cant_img)
