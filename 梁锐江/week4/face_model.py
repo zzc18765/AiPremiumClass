@@ -218,3 +218,4 @@ if __name__ == '__main__':
     his1 = train_model(EPOCHS, model1, dataloader, loss_fn, optimizerSGD)
     draw_train_hist(his1)
     print("4")
+    print("4")
