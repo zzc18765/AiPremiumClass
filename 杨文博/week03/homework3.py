@@ -5,6 +5,10 @@ from torchvision.datasets import KMNIST
 import matplotlib.pyplot as plt
 import ssl
 import torch.nn as nn
+
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+print(f"Using device: {device}")
+
 ssl._create_default_https_context = ssl._create_unverified_context
 
 transform = Compose([ToImage(), ToDtype(torch.float32, scale=True)])
@@ -35,7 +39,7 @@ model = nn.Sequential(
     nn.Linear(128, 512),   # 第一个隐藏层到第二个隐藏层
     nn.ReLU(),         # 激活函数
     nn.Linear(512, 10)    # 第二个隐藏层到输出层
-)
+).to(device)
 
 # 损失函数
 loss_fn = nn.CrossEntropyLoss()
@@ -44,8 +48,9 @@ optimizer = torch.optim.SGD(model.parameters(),lr=LR)
 
 for epoch in range(epoches):
     for data, target in train_loader:
+        data, target = data.reshape(-1, 784).to(device), target.to(device)
         # 前向计算
-        output = model(data.reshape(-1, 784))
+        output = model(data)
         loss = loss_fn(output, target)  # 计算损失
         # 反向传播
         optimizer.zero_grad()  # 梯度归零
@@ -59,8 +64,10 @@ correct = 0
 total = 0
 with torch.no_grad():
     for data, target in test_dl:
-     output = model(data.reshape(-1,784))
-     _,predicted = torch.max(output.data,1)
-     total += target.size(0)
-     correct += (predicted == target).sum().item()
+        data, target = data.reshape(-1, 784).to(device), target.to(device)  # 迁移数据到 GPU
+
+        output = model(data)
+        _, predicted = torch.max(output, 1)
+        total += target.size(0)
+        correct += (predicted == target).sum().item()
 print(f"Accuracy of the network on the 10000 test images: {100*correct/total}")
