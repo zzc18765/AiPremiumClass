@@ -517,7 +517,6 @@ __label__1 Katie Holmes’ trials: Fighting reports about a Jamie Foxx breakup a
 __label__1 Kim Kardashian on Khloé Reconciling with Tristan Thompson: 'She Has to Do What Makes Her Happy'
 __label__1 An In-Depth Analysis of Jennifer Aniston's Body Language with Justin Theroux Versus Brad Pitt
 __label__1 VIDEO: 'Homecoming' Teaser: Julia Roberts Is Ready to 'Get Started'
-__label__1 ‪‪Kristen Stewart‬, ‪Saturday Night Live‬‬
 __label__1 Selena Gomez officially dumps Justin Bieber
 __label__1 See the Official Royal Baby Announcement Outside Buckingham Palace
 __label__1 Def Jam CEO Talks Kanye West and His New Music
@@ -3958,7 +3957,6 @@ __label__1 Caitlyn Jenner’s ‘Frosty’ Relationship With Kylie: Was Kardashi
 __label__1 Tom Hiddleston Thread Part XII
 __label__1 Angelina Jolie 'is not happy' with current custody deal with Brad Pitt: Report
 __label__1 Blake Shelton & Gwen Stefani ‘Stronger Than Ever’ After Miranda Lambert’s New Romance
-__label__1 Taylor Swift ‎– Greatest Hits
 __label__1 Robert Pattinson & Kristen Stewart: Is His Ex-Fiancee FKA Twigs Pissed Over Their Reunion?
 __label__1 Leaving Jennifer Aniston for Angelina Jolie was one of my biggest mistakes: Brad Pitt
 __label__1 Here Are All the Winners From the 2017 AMAs
@@ -3984,7 +3982,7 @@ __label__1 Revenge Body with Khloé Kardashian
 __label__1 Brad Pitt Didn’t Celebrate Kids’ Custody Arrangement With Jennifer Aniston, George Clooney
 __label__1 Selena Gomez Pregnant With The Weeknd’s Baby & Racing to Marry? — Report
 __label__1 Kate Middleton: Is She Pregnant With Twin Girls?!
-__label__1   Lindsay Shookus Still NOT Pregnant  Ben Affleck Baby Shocker Baby Shocker Untrue
+__label__1 Lindsay Shookus Still NOT Pregnant  Ben Affleck Baby Shocker Baby Shocker Untrue
 __label__1 Mila Kunis Has Banned Lea Michele Working With Ashton Kutcher  Report
 __label__1 Tom Cruise’s Strange Hold Over Katie Holmes: From Scientology Minders to the ‘Dating Ban’
 __label__1 She's So Lovely (1997)
@@ -5840,7 +5838,6 @@ __label__0 Katie Holmes’ trials: Fighting reports about a Jamie Foxx breakup a
 __label__0 Kim Kardashian on Khloé Reconciling with Tristan Thompson: 'She Has to Do What Makes Her Happy'
 __label__0 An In-Depth Analysis of Jennifer Aniston's Body Language with Justin Theroux Versus Brad Pitt
 __label__0 VIDEO: 'Homecoming' Teaser: Julia Roberts Is Ready to 'Get Started'
-__label__0 ‪‪Kristen Stewart‬, ‪Saturday Night Live‬‬
 __label__0 Selena Gomez officially dumps Justin Bieber
 __label__0 See the Official Royal Baby Announcement Outside Buckingham Palace
 __label__0 Def Jam CEO Talks Kanye West and His New Music
@@ -10039,7 +10036,6 @@ __label__0 Jennifer Aniston casually dating again
 __label__0 Ariana Grande's Manager Scooter Braun Talks Las Vegas Shooting
 __label__0 Brad Pitt's genius new love Neri Oxman steps out in all black outfit
 __label__0 Amy Schumer Drops Out of ‘Barbie’ Movie – Variety
-__label__0 “Outlander” Stars Sam Heughan, ‎Caitriona Balfe Tease Season 3 Reunion On “Gma”
 __label__0 Jennifer Aniston and Justin Theroux’s furious fights with New York neighbour and his bike being covered in sausage the ‘real reason for their split’, claim reports
 __label__0 Colin Jost Calls Scarlett Johansson His Girlfriend on ‘Saturday Night Live’
 __label__0 Chris Hemsworth's comments on co-star 'upset' Elsa Pataky
