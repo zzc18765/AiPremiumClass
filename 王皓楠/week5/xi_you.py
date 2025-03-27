@@ -34,29 +34,3 @@ print(f"{word1} 和 {word2} 的相关度: {similarity}")
 #找最近的5个邻居
 print(model.get_nearest_neighbors('自然语言处理',k=5))
 print(model.get_analogies('悟空','行者','齐天大圣'))
-
-'''
-'# 选做:使用tensorboard绘制词向量可视化图
-log_dir = 'logs/embeddings'
-writer = SummaryWriter(log_dir)
-
-# 提取词汇和对应的词向量
-words = model.words
-vectors = np.array([model.get_word_vector(word) for word in words])
-
-# 使用TSNE进行降维
-tsne = TSNE(n_components=2, random_state=42)
-vectors_2d = tsne.fit_transform(vectors)
-
-# 转换为 PyTorch 张量
-vectors_2d_tensor = torch.tensor(vectors_2d, dtype=torch.float32)
-
-# 将词向量和对应的标签写入 TensorBoard
-writer.add_embedding(vectors_2d_tensor, metadata=words)
-
-writer.close()
-
-print("词向量可视化数据已保存到", log_dir)
-print("请在终端中运行以下命令启动TensorBoard:")
-print("tensorboard --logdir=logs/embeddings")'
-'''
