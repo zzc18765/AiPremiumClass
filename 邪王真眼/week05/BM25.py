@@ -5,8 +5,6 @@ import jieba
 import numpy as np
 
 from collections import Counter
-from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.metrics.pairwise import cosine_similarity
 
 
 def load_stopwords(file_path):
@@ -45,10 +43,12 @@ def chinese_tokenizer(text, stopwords):
     return [word for word in words if word not in stopwords]
 
 
-def calculate_tfidf(comments, stopwords):
-    doc_term_freq = {}
+def calculate_bm25(comments, stopwords, k1=1.5, b=0.75):
+    doc_lengths = {}
+    avgdl = 0
     all_terms = []
-
+    doc_term_freq = {}
+    
     for book_name, comments_list in comments.items():
         all_terms_for_book = []
         for comment in comments_list:
@@ -56,24 +56,34 @@ def calculate_tfidf(comments, stopwords):
             all_terms_for_book.extend(words)
             all_terms.extend(words)
         
+        doc_lengths[book_name] = len(all_terms_for_book)
+        avgdl += len(all_terms_for_book)
         doc_term_freq[book_name] = Counter(all_terms_for_book)
-
+    
+    avgdl /= len(comments)
+    
+    # IDF
     idf = {}
     total_docs = len(comments)
     unique_terms = set(all_terms)
     
     for term in unique_terms:
         doc_count_with_term = sum(1 for doc_terms in doc_term_freq.values() if term in doc_terms)
-        idf[term] = math.log((total_docs + 1) / (1 + doc_count_with_term))
-
-    tfidf = {}
-
+        idf[term] = math.log((total_docs - doc_count_with_term + 0.5) / (doc_count_with_term + 0.5))
+    
+    # BM25
+    bm25_scores = {}
+    
     for book_name, term_freq in doc_term_freq.items():
-        tfidf[book_name] = {}
+        bm25_scores[book_name] = {}
+        doc_length = doc_lengths[book_name]
+        
         for term, tf in term_freq.items():
-            tfidf[book_name][term] = tf * idf.get(term, 0)
-
-    return tfidf, all_terms
+            numerator = tf * (k1 + 1)
+            denominator = tf + k1 * (1 - b + b * (doc_length / avgdl))
+            bm25_scores[book_name][term] = idf.get(term, 0) * (numerator / denominator)
+    
+    return bm25_scores, all_terms
 
 
 def get_book_tfidf_vector(tfidf, book_name, all_terms):
@@ -84,13 +94,16 @@ def get_book_tfidf_vector(tfidf, book_name, all_terms):
 
 
 def my_cosine_similarity(vec1, vec2):
-    dot_product = np.dot(vec1, vec2)
-    
     norm_vec1 = np.linalg.norm(vec1)
     norm_vec2 = np.linalg.norm(vec2)
     
-    similarity = dot_product / (norm_vec1 * norm_vec2)
-    return similarity
+    if norm_vec1 == 0 or norm_vec2 == 0:
+        return 0.0
+    
+    vec1_normalized = vec1 / norm_vec1
+    vec2_normalized = vec2 / norm_vec2
+    
+    return np.dot(vec1_normalized, vec2_normalized)
 
 
 def get_most_similar_books(tfidf, all_terms, selected_book, top_n=5):
@@ -120,32 +133,13 @@ def main():
     selected_book = '盗墓笔记'
     print(f"Selected Book: {selected_book}")
 
-    manual = True
+    bm25, all_terms = calculate_bm25(comments, stopwords)
 
-    if manual == True:
-        tfidf, all_terms = calculate_tfidf(comments, stopwords)
+    similar_books = get_most_similar_books(bm25, all_terms, selected_book, top_n=5)
 
-        similar_books = get_most_similar_books(tfidf, all_terms, selected_book, top_n=5)
-
-        print("Most similar books:")
-        for book, similarity in similar_books:
-            print(f"Book: {book}, Similarity: {similarity:.4f}")
-    
-    else:
-        vec = TfidfVectorizer(stop_words=list(stopwords))
-        tfidf = vec.fit_transform([' '.join(comms) for comms in comments.values()])
-        similar = cosine_similarity(tfidf)
-
-        selected_book_index = list(comments.keys()).index(selected_book)
-        similarity_scores = similar[selected_book_index]
-        similarity_scores[selected_book_index] = -1
-        most_similar_books_indices = similarity_scores.argsort()[-5:][::-1]
-        
-        print("Most similar books:")
-        for index in most_similar_books_indices:
-            book_name = list(comments.keys())[index]
-            similarity = similarity_scores[index]
-            print(f"Book: {book_name}, Similarity: {similarity:.4f}")
+    print("Most similar books:")
+    for book, similarity in similar_books:
+        print(f"Book: {book}, Similarity: {similarity:.4f}")
 
 
 if __name__ == "__main__":
