@@ -9,7 +9,7 @@ with open("week5/dpcq_t.txt",'w', encoding='utf-8') as f:
     for word in words:
         f.write(word+' ')
 
-model=fasttext.train_unsupervised("week5/dpcq_t.txt",epoch=20, dim=300)
+model=fasttext.train_unsupervised("week5/dpcq_t.txt")
 
 print(model.get_nearest_neighbors("萧炎"))
 print(model.get_sentence_vector("美杜莎"))
