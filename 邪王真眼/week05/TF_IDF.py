@@ -136,7 +136,8 @@ def main():
     
     else:
         vec = TfidfVectorizer(stop_words=list(stopwords))
-        tfidf = vec.fit_transform([' '.join(comms) for comms in comments.values()])
+        tokenized_comments = [' '.join(chinese_tokenizer(' '.join(comms), stopwords)) for comms in comments.values()]
+        tfidf = vec.fit_transform(tokenized_comments)
         similar = cosine_similarity(tfidf)
 
         selected_book_index = list(comments.keys()).index(selected_book)

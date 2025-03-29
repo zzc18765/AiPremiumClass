@@ -22,6 +22,9 @@ def load_and_preprocess_comments(file_path):
             if i == 0:
                 continue
 
+            # if i == 5000:
+            #     break
+
             terms = line.split("\t")
             if len(terms) >= 6:
                 if terms[0] == '':
@@ -44,6 +47,7 @@ def chinese_tokenizer(text, stopwords):
 
 
 def calculate_bm25(comments, stopwords, k1=1.5, b=0.75):
+    N = len(comments)
     doc_lengths = {}
     avgdl = 0
     all_terms = []
@@ -60,16 +64,16 @@ def calculate_bm25(comments, stopwords, k1=1.5, b=0.75):
         avgdl += len(all_terms_for_book)
         doc_term_freq[book_name] = Counter(all_terms_for_book)
     
-    avgdl /= len(comments)
+    avgdl /= N
     
     # IDF
     idf = {}
-    total_docs = len(comments)
+    
     unique_terms = set(all_terms)
     
     for term in unique_terms:
         doc_count_with_term = sum(1 for doc_terms in doc_term_freq.values() if term in doc_terms)
-        idf[term] = math.log((total_docs - doc_count_with_term + 0.5) / (doc_count_with_term + 0.5))
+        idf[term] = math.log((N - doc_count_with_term + 0.5) / (doc_count_with_term + 0.5))
     
     # BM25
     bm25_scores = {}
@@ -83,13 +87,13 @@ def calculate_bm25(comments, stopwords, k1=1.5, b=0.75):
             denominator = tf + k1 * (1 - b + b * (doc_length / avgdl))
             bm25_scores[book_name][term] = idf.get(term, 0) * (numerator / denominator)
     
-    return bm25_scores, all_terms
+    return bm25_scores, list(unique_terms)
 
 
-def get_book_tfidf_vector(tfidf, book_name, all_terms):
+def get_book_bm25_vector(BM25, book_name, all_terms):
     vector = []
     for term in all_terms:
-        vector.append(tfidf.get(book_name, {}).get(term, 0))
+        vector.append(BM25.get(book_name, {}).get(term, 0))
     return np.array(vector)
 
 
@@ -106,14 +110,14 @@ def my_cosine_similarity(vec1, vec2):
     return np.dot(vec1_normalized, vec2_normalized)
 
 
-def get_most_similar_books(tfidf, all_terms, selected_book, top_n=5):
-    book_names = list(tfidf.keys())
-    selected_vector = get_book_tfidf_vector(tfidf, selected_book, all_terms)
+def get_most_similar_books(bm25, all_terms, selected_book, top_n=5):
+    book_names = list(bm25.keys())
+    selected_vector = get_book_bm25_vector(bm25, selected_book, all_terms)
     
     similarities = []
     for book in book_names:
         if book != selected_book:
-            book_vector = get_book_tfidf_vector(tfidf, book, all_terms)
+            book_vector = get_book_bm25_vector(bm25, book, all_terms)
             similarity = my_cosine_similarity(selected_vector, book_vector)
             similarities.append((book, similarity))
 
