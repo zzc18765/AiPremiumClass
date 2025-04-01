@@ -5,7 +5,7 @@
 https://www.kaggle.com/datasets/saurabhshahane/fake-news-classification
 
 
-## 实现基于豆瓣top250图书评论的简单推荐系统（TF-IDF及BM25两种算法实现）
+## 1 实现基于豆瓣top250图书评论的简单推荐系统（TF-IDF及BM25两种算法实现）
 
 ### TF 词频 (Term Frequency) 
 
@@ -23,7 +23,13 @@ https://www.kaggle.com/datasets/saurabhshahane/fake-news-classification
 - 算法本质：概率检索模型优化版
 - 词频处理：非线性饱和（抑制重复此词影响）
 - 计算复杂度：中等
-![图书推荐算法22](1_bm25_result.png)
+![图书推荐算法2](1_bm25_result.png)
 
 
-## 使用自定义的文档文本，通过fasttext训练word2vec训练词向量模型，并计算词汇间的相关度。（选做：尝试tensorboard绘制词向量可视化图）
+## 2 使用自定义的文档文本，通过fasttext训练word2vec训练词向量模型，并计算词汇间的相关度。（选做：尝试tensorboard绘制词向量可视化图）
+
+
+![词向量可视化图](2_fasttext_to_tesorboard_result.png)
+
+
+## 3 使用fasttext训练文本分类模型
