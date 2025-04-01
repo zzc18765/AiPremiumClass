@@ -1,47 +1,13 @@
 import os
 import copy
 import torch
+import numpy as np
 import torch.nn as nn
 import torch.optim as optim
+
 from sklearn.datasets import fetch_olivetti_faces
-import numpy as np
 from torch.utils.data import TensorDataset, DataLoader
-
-
-class CNN(nn.Module):
-    def __init__(self):
-        super(CNN, self).__init__()
-        
-        self.conv1 = nn.Conv2d(in_channels=1, out_channels=8, kernel_size=3, padding=1)
-        self.bn1 = nn.BatchNorm2d(8)
-        
-        self.conv2 = nn.Conv2d(in_channels=8, out_channels=64, kernel_size=3, padding=1)
-        self.bn2 = nn.BatchNorm2d(64)
-
-        self.conv3 = nn.Conv2d(in_channels=64, out_channels=256, kernel_size=3, padding=1)
-        self.bn3 = nn.BatchNorm2d(256)
-        
-        self.pool = nn.MaxPool2d(kernel_size=2, stride=2)
-        
-        self.fc1 = nn.Linear(256 * 8 * 8, 256)
-
-        self.dropout = nn.Dropout(0.3)
-
-        self.fc2 = nn.Linear(256, 40)
-    
-    def forward(self, x):
-        x = torch.relu(self.bn1(self.conv1(x)))
-        x = self.pool(x)
-        x = torch.relu(self.bn2(self.conv2(x)))
-        x = self.pool(x)
-        x = torch.relu(self.bn3(self.conv3(x)))
-        x = self.pool(x)
-
-        x = x.view(x.size(0), -1)
-        x = self.dropout(torch.relu(self.fc1(x)))
-        x = self.fc2(x)
-        
-        return x
+from 邪王真眼.models.cnn import CNN2
 
 
 def main():
@@ -76,7 +42,7 @@ def main():
     test_loader = DataLoader(test_dataset, batch_size=bs, shuffle=False)
 
     # model
-    model = CNN().to(device)
+    model = CNN2().to(device)
     criterion = nn.CrossEntropyLoss()
     
     optimizer_sgd = optim.SGD(model.parameters(), lr=10 * lr, momentum=0.9, nesterov=True)
