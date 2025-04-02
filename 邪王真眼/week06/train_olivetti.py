@@ -8,27 +8,36 @@ import numpy as np
 import torch.nn as nn
 import torch.optim as optim
 
+from torch.utils.tensorboard import SummaryWriter
 from sklearn.datasets import fetch_olivetti_faces
 from torch.utils.data import TensorDataset, DataLoader
-from 邪王真眼.models.cnn import CNN2
+from 邪王真眼.models.rnn import RNNModel
 
 
 def main():
     # hyperparameter
     lr = 0.0001
-    epochs = 20
+    epochs = 100
     bs = 4
     weight_decay = 1e-4
+    model_type = 'birnn' # 'rnn' 'lstm' 'gru' 'birnn'
 
     dataset_path = "./邪王真眼/dataset"
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+    writer = SummaryWriter(f'./邪王真眼/week06/runs/face_{model_type}')
 
     # dataset
     faces = fetch_olivetti_faces(data_home=dataset_path, shuffle=False)
     X = faces.images  # (400, 64, 64)
     y = faces.target  # (400,)
 
-    X = torch.tensor(X, dtype=torch.float32).unsqueeze(1)  # (400, 1, 64, 64)
+    mean = X.mean()
+    std = X.std()
+    X = (X - mean) / std
+
+    X = torch.tensor(X, dtype=torch.float32)  # (400, 64, 64)
+    X = X.permute(0, 2, 1)  # (400, 64, 64)
     y = torch.tensor(y, dtype=torch.long)
 
     # 7:3 for each person
@@ -45,23 +54,22 @@ def main():
     test_loader = DataLoader(test_dataset, batch_size=bs, shuffle=False)
 
     # model
-    model = CNN2().to(device)
+    model = RNNModel(model_type=model_type, input_size=64, hidden_size=256, num_classes=40, num_layers=3, dropout=0.3).to(device)
     criterion = nn.CrossEntropyLoss()
     
-    optimizer_sgd = optim.SGD(model.parameters(), lr=10 * lr, momentum=0.9, nesterov=True)
-    optimizer_adam = optim.Adam(model.parameters(), lr=lr, weight_decay=weight_decay)
-    optimizer_rmsprop = optim.RMSprop(model.parameters(), lr=lr, weight_decay=weight_decay, alpha=0.99, eps=1e-08)
-    optimizer_adamw = optim.AdamW(model.parameters(), lr=lr, weight_decay=weight_decay)
-
-    optimizer = optimizer_adam
-
+    optimizer = optim.Adam(model.parameters(), lr=lr, weight_decay=weight_decay)
+    scheduler = optim.lr_scheduler.LambdaLR(
+            optimizer,
+            lr_lambda=lambda iter: (1 - iter / epochs) ** 0.9
+        )
+    
     # train
     max_correct = 0
     best_model = None
     for epoch in range(epochs):
         model.train()
         running_loss = 0.0
-        correct, total = 0, 0
+        train_correct, train_total = 0, 0
         batch = 1
 
         print(f"\nEpoch {epoch+1}/{epochs}")
@@ -76,33 +84,43 @@ def main():
 
             running_loss += loss.item()
             _, predicted = outputs.max(1)
-            total += labels.size(0)
-            correct += predicted.eq(labels).sum().item()
+            train_total += labels.size(0)
+            train_correct += predicted.eq(labels).sum().item()
 
-            print(f'\rBatch [{batch + 1}/{len(train_loader)+1}], Loss: {running_loss/len(train_loader):.4f}, Accuracy: {100.*correct/total:.2f}%', end='', flush=True)
+            print(f'\rBatch [{batch + 1}/{len(train_loader)+1}], Loss: {running_loss/len(train_loader):.4f}, Accuracy: {100.*train_correct/train_total:.2f}%', end='', flush=True)
             batch += 1
+        
+        avg_loss = running_loss / len(train_loader)
+        train_acc = 100. * train_correct / train_total
+        writer.add_scalar('Loss/train', avg_loss, epoch)
+        writer.add_scalar('Accuracy/train', train_acc, epoch)
+        scheduler.step()
 
         # val
         model.eval()
-        correct, total = 0, 0
+        val_correct, val_total = 0, 0
         with torch.no_grad():
             for inputs, labels in test_loader:
                 inputs, labels = inputs.to(device), labels.to(device)
                 outputs = model(inputs)
                 _, predicted = outputs.max(1)
-                total += labels.size(0)
-                correct += predicted.eq(labels).sum().item()
+                val_total += labels.size(0)
+                val_correct += predicted.eq(labels).sum().item()
 
-        print(f'\n  VAL:   Accuracy: {100.*correct/total:.2f}%')
-        if correct > max_correct:
-            max_correct = correct
+        val_acc = 100. * val_correct / val_total
+        writer.add_scalar('Accuracy/val', val_acc, epoch)
+
+        print(f'\n  VAL:   Accuracy: {100.*val_correct/val_total:.2f}%')
+        if val_correct > max_correct:
+            max_correct = val_correct
             best_model = copy.deepcopy(model)
             print(f'  VAL:   best model!')
 
         model.train()
 
+    writer.close()
     # save model
-    save_path = f"./邪王真眼/week04/olivetti_CNN_acc_{100.*max_correct/total:.2f}.pth"
+    save_path = f"./邪王真眼/week06/results/weather_{model_type}_acc_{100.*max_correct/val_total:.2f}.pth"
     dir_path = os.path.dirname(save_path)
     if not os.path.exists(dir_path):
         os.makedirs(dir_path)
