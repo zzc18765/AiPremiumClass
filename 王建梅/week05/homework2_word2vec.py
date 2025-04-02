@@ -97,7 +97,7 @@ if __name__ == '__main__':
     # train_word2vec(hlm_fixed_path)
     # 加载模型
     model_skipgram = load_model(os.path.join(current_dir,'fasttext_model_skipgram.bin'))
-    """
+    
     # 获取词向量和相似度
     word1 = "贾宝玉"
     word2 = "林黛玉"
@@ -121,7 +121,6 @@ if __name__ == '__main__':
     print(f"'{sentence1}'的最近邻:")
     for similar_sentence, similarity in similar_sentences:
         print(f"相似句子: {similar_sentence}, 相似度: {similarity}")
-    """
 
     # 可视化词向量
     word_list = ["贾宝玉", "林黛玉","袭人","葬花","大观园"]  # 可以添加更多的词
