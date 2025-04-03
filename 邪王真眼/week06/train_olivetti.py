@@ -3,6 +3,7 @@ import sys
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
 
 import copy
+import uuid
 import torch
 import numpy as np
 import torch.nn as nn
@@ -12,6 +13,8 @@ from torch.utils.tensorboard import SummaryWriter
 from sklearn.datasets import fetch_olivetti_faces
 from torch.utils.data import TensorDataset, DataLoader
 from 邪王真眼.models.rnn import RNNModel
+
+uuid = uuid.uuid4().hex[:8]
 
 
 def main():
@@ -25,7 +28,7 @@ def main():
     dataset_path = "./邪王真眼/dataset"
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    writer = SummaryWriter(f'./邪王真眼/week06/runs/face_{model_type}')
+    writer = SummaryWriter(f'./邪王真眼/week06/runs/face')
 
     # dataset
     faces = fetch_olivetti_faces(data_home=dataset_path, shuffle=False)
@@ -92,8 +95,9 @@ def main():
         
         avg_loss = running_loss / len(train_loader)
         train_acc = 100. * train_correct / train_total
-        writer.add_scalar('Loss/train', avg_loss, epoch)
-        writer.add_scalar('Accuracy/train', train_acc, epoch)
+        writer.add_scalar(f'{model_type}_Loss_{uuid}/train', avg_loss, epoch)
+        writer.add_scalar(f'{model_type}_Accuracy_{uuid}/train', train_acc, epoch)
+
         scheduler.step()
 
         # val
@@ -108,7 +112,7 @@ def main():
                 val_correct += predicted.eq(labels).sum().item()
 
         val_acc = 100. * val_correct / val_total
-        writer.add_scalar('Accuracy/val', val_acc, epoch)
+        writer.add_scalar(f'{model_type}_Accuracy_{uuid}/val', val_acc, epoch)
 
         print(f'\n  VAL:   Accuracy: {100.*val_correct/val_total:.2f}%')
         if val_correct > max_correct:
@@ -120,7 +124,7 @@ def main():
 
     writer.close()
     # save model
-    save_path = f"./邪王真眼/week06/results/weather_{model_type}_acc_{100.*max_correct/val_total:.2f}.pth"
+    save_path = f"./邪王真眼/week06/results/face_{model_type}_acc_{100.*max_correct/val_total:.2f}.pth"
     dir_path = os.path.dirname(save_path)
     if not os.path.exists(dir_path):
         os.makedirs(dir_path)

@@ -3,13 +3,17 @@ import sys
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
 
 import copy
+import uuid
 import torch
 import torch.nn as nn
 import torch.optim as optim
 
+from torch.utils.tensorboard import SummaryWriter
 from torch.utils.data import DataLoader
 from 邪王真眼.models.rnn import RNNModel
 from 邪王真眼.week06.weather_dataset import WeatherStationDataset
+
+uuid = uuid.uuid4().hex[:8]
 
 
 def main():
@@ -19,17 +23,22 @@ def main():
     bs = 1024
     weight_decay = 1e-4
     model_type = 'gru' # 'rnn' 'lstm' 'gru' 'birnn'
-    label_days = 5
+    label_days = 1
+    input_days = 10
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
+    writer = SummaryWriter(f'./邪王真眼/week06/runs/weather')
+
     # dataset
     dataset = WeatherStationDataset(
-        input_days=50,
+        input_days=input_days,
         label_days=label_days,
         min_station_samples=1000,
         val_ratio=0.3
     )
+
+    baseline_mae = dataset.baseline_mae
     
     train_dataset, val_dataset = dataset.get_datasets()
     
@@ -87,6 +96,9 @@ def main():
             print(f'\rBatch [{batch}/{len(train_loader)}] Loss: {running_loss/batch:.4f} | MAE: {100*(running_mae/batch):.4f}%', end='', flush=True)
             batch += 1
 
+        writer.add_scalar(f'{model_type}_input{input_days}_predict{label_days}_Loss_{uuid}_BaselineMAE_{100*baseline_mae:.4f}%/train', running_loss/batch, epoch)
+        writer.add_scalar(f'{model_type}_input{input_days}_predict{label_days}_MAE_{uuid}_BaselineMAE_{100*baseline_mae:.4f}%/train', running_mae/batch, epoch)
+
         scheduler.step()
 
         # val
@@ -113,7 +125,11 @@ def main():
 
         avg_val_loss = val_loss / len(val_loader)
         avg_val_mae = val_mae / len(val_loader)
+        writer.add_scalar(f'{model_type}_input{input_days}_predict{label_days}_Loss_{uuid}_BaselineMAE_{100*baseline_mae:.4f}%/val', avg_val_loss, epoch)
+        writer.add_scalar(f'{model_type}_input{input_days}_predict{label_days}_MAE_{uuid}_BaselineMAE_{100*baseline_mae:.4f}%/val', avg_val_mae, epoch)
+
         print(f'\n  VAL:   MSE: {avg_val_loss:.4f} | MAE: {100*avg_val_mae:.4f}%')
+
         if avg_val_mae < best_val_mae:
             best_val_mae = avg_val_mae
             best_val_loss = avg_val_loss
@@ -123,7 +139,7 @@ def main():
         model.train()
 
     # save model
-    save_path = f"./邪王真眼/week06/results/weather_{model_type}_mae_{100*best_val_mae:.4f}%.pth"
+    save_path = f"./邪王真眼/week06/results/weather_{model_type}_input{input_days}_predict{label_days}_MAE_{100*best_val_mae:.4f}%_BaselineMAE_{100*baseline_mae:.4f}%.pth"
     dir_path = os.path.dirname(save_path)
     if not os.path.exists(dir_path):
         os.makedirs(dir_path)
