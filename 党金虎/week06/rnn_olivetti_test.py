@@ -91,7 +91,7 @@ class BiRNNModel(nn.Module):
 
     def forward(self, x):
         x = x.view(x.shape[0], -1, x.shape[-1])  # 
-        out, _ = self.rnn(x) # 前向传播
+        out, _ = self.birnn(x) # 前向传播
         out = self.fc(out[:,  -1, :]) # 取最后一个时间步的输出
         return out
     
