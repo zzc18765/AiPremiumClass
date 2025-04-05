@@ -11,3 +11,8 @@ rnn_code相关代码会更新到资料中。
 kaggle代码：
 https://www.kaggle.com/code/cliheng/fasttext-classification
 https://www.kaggle.com/code/cliheng/rnn-timeseries-regression
+
+
+## 作业1 不同的RNN结构实现一个人脸图像分类器
+采用kaggle 52s · GPU P100运行结果：提交文件 `党金虎\week06\runs\events.out.tfevents.1743858084.5e2b96aebb28.17.0`
+![](1_rnn_olivetti_test_result.png)

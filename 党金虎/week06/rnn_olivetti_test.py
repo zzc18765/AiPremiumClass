@@ -97,7 +97,7 @@ class BiRNNModel(nn.Module):
     
 # 3、训练评估函数 ======================
 
-def train_and_evaluate(model, model_name, num_epochs=10):
+def train_and_evaluate(model, model_name, num_epochs=100):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu") 
     model.to(device)
     criterion = nn.CrossEntropyLoss() # 损失函数
@@ -143,4 +143,7 @@ for name, model in models.items():
 writer.close()  # 关闭 TensorBoard 记录器
 
 print("\n🎯 运行以下命令以查看 TensorBoard 结果：")
-print("tensorboard --logdir=./logs")
+print("tensorboard --logdir=./党金虎/week06/runs")
+
+##################本地运行太耗时间,采用kaggle 52s · GPU P100 ######################################
+# https://www.kaggle.com/code/zfy681/notebookcab263a10a/edit
