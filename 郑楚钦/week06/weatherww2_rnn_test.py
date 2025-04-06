@@ -11,54 +11,14 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 print(device)
 
 
-def trainAndTest(model_type: torch.nn.RNNBase, bidirectional: bool = False, epoches=100, lr=0.001, hidden_size: int = 128,  num_layers: int = 2):
-
-    writer = SummaryWriter("logs")
-    train_dl, test_dl = get_dataloaders()
-    model_name = ('bi_' if bidirectional else '') + model_type.__name__
-    model = RNN_Classifier(model_type, bidirectional, 1, hidden_size,
-                           1, num_layers).to(device)
-    loss_fn = nn.CrossEntropyLoss()
-    optimizer = torch.optim.Adam(model.parameters(), lr=lr)
-
-    for epoch in range(epoches):
-        model.train()
-        for batch_idx, (features, target) in enumerate(train_dl):
-            optimizer.zero_grad()
-            ouput = model(features)
-            loss = loss_fn(ouput, target.to(dtype=torch.long))
-            loss.backward()
-            # 梯度裁剪
-            torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
-            optimizer.step()
-
-            writer.add_scalars('loss', {model_name: loss.item()},
-                               epoch * len(train_dl) + batch_idx)
-
-        model.eval()
-        with torch.no_grad():
-            correct = 0
-            total = 0
-            for features, target in test_dl:
-                output = model.predict(features.squeeze())
-                total += target.size(0)
-                correct += (output == target).sum().item()
-            accuracy = 100 * correct / total
-            writer.add_scalars('accuracy', {model_name: accuracy}, epoch)
-    torch.save(model, f'model_{model_name}.pth')
-    torch.save(model.state_dict(), f'model_{model_name}_params.pth')
-    writer.close()
-
-
 class RNN(torch.nn.Module):
     def __init__(self):
         super().__init__()
-        self.rnn = torch.nn.RNN(
-            input_size=1, hidden_size=20, num_layers=1, batch_first=True)
-        self.fc = torch.nn.Linear(20, 1)
+        self.rnn = torch.nn.RNN(input_size=1, hidden_size=20, num_layers=1, dtype=torch.float64)
+        self.fc = torch.nn.Linear(20, 5, dtype=torch.float64)
 
     def forward(self, x):
-        x, h = self.rnn(x)
+        x2, h = self.rnn(x)
         y = self.fc(h)
         return y
 
@@ -71,26 +31,33 @@ def fit(model, dataloader, epochs=10):
     for epoch in bar:
         model.train()
         train_loss = []
+        last_y = None
         for batch in dataloader['train']:
             X, y, _ = batch
-            X, y = X.to(device, dtype=torch.float)[:, np.newaxis], torch.tensor(
-                y).to(device, dtype=torch.float)
-            optimizer.zero_grad()
-            y_hat = model(X)
-            loss = criterion(y_hat, y)
-            loss.backward()
-            optimizer.step()
-            train_loss.append(loss.item())
+            if (last_y is not None):
+                X = torch.tensor(y).to(device, dtype=torch.float64)[:, np.newaxis]
+                optimizer.zero_grad()
+                y_hat = model(X)
+                loss = criterion(y_hat, last_y)
+                loss.backward()
+                optimizer.step()
+                train_loss.append(loss.item())
+            last_y = y[np.newaxis, :]
         model.eval()
         eval_loss = []
+        last_y = None
         with torch.no_grad():
             for batch in dataloader['eval']:
-                X, y, _ = batch
-                X, y = X.to(device, dtype=torch.float)[:, np.newaxis], torch.tensor(
-                    y).to(device, dtype=torch.float)
-                y_hat = model(X)
-                loss = criterion(y_hat, y)
-                eval_loss.append(loss.item())
+                dates, y, _ = batch
+                if (last_y is not None):
+                    X = torch.tensor(y).to(device, dtype=torch.float64)[:, np.newaxis]
+                    y_hat = model(X)
+                    loss = criterion(y_hat, last_y)
+                    eval_loss.append(loss.item())
+                    if epoch == epochs:
+                        for i in range(len(dates)):
+                            writer.add_scalars(key, {'y_hat': y_hat[0][i].item(), 'y': y[i].item()}, dates[i])                   
+                last_y = y[np.newaxis, :]
         bar.set_description(f"loss {np.mean(train_loss):.5f} val_loss {
                             np.mean(eval_loss):.5f}")
 
@@ -100,25 +67,24 @@ def predict(key, model, data):
     model.eval()
     with torch.no_grad():
         for X, y, date in data:
-            pred = model(torch.tensor([[X]]).to(device, dtype=torch.float))
+            pred = model(torch.tensor([[X]]).to(device, dtype=torch.float64))
             writer.add_scalars(
-                key, {'y_hat': pred.item(), 'y': y}, X)
+                key, {'y_hat': pred[0][0].item(), 'y': y}, X)
     writer.close()
 
 
 with open('./week06/homework/Summary of Weather.csv', 'r') as f:
+    writer = SummaryWriter("run")
     reader = csv.reader(f)
     print('表头', reader.__next__())
     staDict = {}
-    beginDate = datetime.datetime.strptime('1942-01-01', '%Y-%m-%d')
+    beginDate = datetime.datetime.strptime('1940-01-01', '%Y-%m-%d')
     for row in reader:
-        date_arr = [int(n) for n in row[1].split('-')]
         curDate = datetime.datetime.strptime(row[1], '%Y-%m-%d') - beginDate
         date = curDate.days
         # print(f'STA {row[0]}, Date {date}, MaxTemp {row[4]}')
         arr = staDict.setdefault(row[0], [])
-        arr.append([date, float(row[4]), date_arr[0] *
-                   10000 + date_arr[1] * 100 + date_arr[2]])
+        arr.append([date, float(row[4]), row[1]])
     batch_size = 5
     for key in staDict:
         data = staDict[key]
@@ -132,4 +98,5 @@ with open('./week06/homework/Summary of Weather.csv', 'r') as f:
             data[train_len:], batch_size=batch_size)
         rnn = RNN()
         fit(rnn, {'train': train_dl, 'eval': val_dl}, epochs=100)
-        y_pred = predict(key, rnn, data[train_len:])
+        # y_pred = predict(key, rnn, data[train_len:])
+    writer.close()
