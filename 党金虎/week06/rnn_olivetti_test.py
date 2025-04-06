@@ -16,7 +16,7 @@ from sklearn.model_selection import train_test_split
 from torch.utils.tensorboard import SummaryWriter
 
 # 🔹 初始化 TensorBoard 记录器（用于可视化训练过程）
-writer = SummaryWriter(log_dir="./党金虎/week06/runs")
+writer = SummaryWriter(log_dir="./党金虎/week06/runs/olivetti_model")
 
 
 # 1、数据准备 ======================
@@ -143,7 +143,7 @@ for name, model in models.items():
 writer.close()  # 关闭 TensorBoard 记录器
 
 print("\n🎯 运行以下命令以查看 TensorBoard 结果：")
-print("tensorboard --logdir=./党金虎/week06/runs")
+print("tensorboard --logdir=./党金虎/week06/runs/olivetti_model")
 
 ##################本地运行太耗时间,采用kaggle 52s · GPU P100 ######################################
 # https://www.kaggle.com/code/zfy681/notebookcab263a10a/edit
