@@ -1,0 +1,2 @@
+comment_pre负责读入豆瓣评论以及简单预处理，comment_deal负责处理豆瓣评论，构建模型和字典，comment_predict负责简单文本评估测试，pre_text简要比较了在jieba和sentence_piece在读取西游记文本上的表现，
+发现大部分词汇分词比较重叠
