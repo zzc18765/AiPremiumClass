@@ -13,16 +13,9 @@ class ValEvaluationPlugin(PluginBase):
         self.history = []
     
     @staticmethod
-    def _batch_metrics(logits, targets):
-        probs = torch.sigmoid(logits).squeeze(1)
-        preds = (probs > 0.5).long()
-        targets = targets.long()
-
-        tp = ((preds == 1) & (targets == 1)).sum()
-        fp = ((preds == 1) & (targets == 0)).sum()
-        fn = ((preds == 0) & (targets == 1)).sum()
-        tn = ((preds == 0) & (targets == 0)).sum()
-        return tp, fp, fn, tn
+    def _batch_correct(logits, targets):
+        preds = logits.argmax(dim=1)
+        return (preds == targets).sum()
     
     def evaluate(self, ctx: TrainContext):
         if (ctx.epoch + 1) % 1 != 0:
@@ -38,7 +31,7 @@ class ValEvaluationPlugin(PluginBase):
 
         model.eval()
         total_loss = 0.0
-        tot_tp = tot_fp = tot_fn = tot_tn = 0
+        tot_correct = 0
 
         with torch.no_grad():
             for inputs, targets in val_loader:
@@ -50,28 +43,18 @@ class ValEvaluationPlugin(PluginBase):
                 loss = criterion(logits, targets.long())
                 total_loss += loss.item()
 
-                tp, fp, fn, tn = self._batch_metrics(logits, targets)
-                tot_tp += tp.item()
-                tot_fp += fp.item()
-                tot_fn += fn.item()
-                tot_tn += tn.item()
+                tot_correct += self._batch_correct(logits, targets).item()
         
 
         n = len(val_loader.dataset)
         val_loss = total_loss / len(val_loader)
-        acc = (tot_tp + tot_tn) / n
-        prec = tot_tp / (tot_tp + tot_fp + 1e-8)
-        rec  = tot_tp / (tot_tp + tot_fn + 1e-8)
-        f1   = 2 * prec * rec / (prec + rec + 1e-8)
+        acc = tot_correct / n
 
 
         self.history.append({
             "epoch": ctx.epoch,
             "val_loss": val_loss,
             "val_acc": acc,
-            "precision": prec,
-            "recall": rec,
-            "f1": f1
         })
 
         msg = {
@@ -86,6 +69,5 @@ class ValEvaluationPlugin(PluginBase):
             ctx.workspace["logger"](str(msg))
 
         ctx.workspace['val_acc'] = acc
-        ctx.workspace['val_f1']  = f1
 
         model.train()
