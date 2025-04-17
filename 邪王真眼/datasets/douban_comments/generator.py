@@ -15,11 +15,20 @@ class DoubanCommentDataset(Dataset):
         self.split_ratio = cfg.get("split_ratio")
         self.data_max_num = cfg.get("data_max_num")
 
+        if cfg.get("tokenizer") == "jieba":
+            self.tokenizer = cw.JiebaTokenizer()
+        elif cfg.get("tokenizer") == "SentencePiece":
+            self.tokenizer = cw.SentencePieceTokenizer(vocab_size=cfg.get("vocab_size", 10000))
+
         self.data = self._load_data(cfg)
         
         if split == "train":
-            cfg['text_len'] = self.max_len
-            cfg['vocab_size'] = len(self.vocab_to_index)
+            cfg.update({
+                'text_len': self.max_len,
+                'vocab_size': len(self.vocab_to_index),
+                'vocab_to_index': self.vocab_to_index,
+                'index_to_vocab': self.index_to_vocab
+            })
 
     def _load_data(self, cfg: Dict) -> pd.DataFrame:
         raw = pd.read_csv(self.csv_file_path, usecols=["Comment", "Star"])
@@ -29,28 +38,20 @@ class DoubanCommentDataset(Dataset):
         split_idx = int(len(data) * self.split_ratio)
         data = data.iloc[:split_idx] if self.split == "train" else data.iloc[split_idx:]
 
-        seqs, self.vocab_to_index, self.index_to_vocab, self.max_len = utils.cut_words.texts_to_index_sequences(
-            data["Comment"].tolist()
-        )
         if self.split == "train":
-            seqs, vocab_to_idx, idx_to_vocab, max_len = cw.texts_to_index_sequences(
-                data["Comment"].tolist()
+            seqs, self.vocab_to_index, self.index_to_vocab, self.max_len = cw.texts_to_index_sequences(
+                data["Comment"].tolist(),
+                self.tokenizer,
+                train=True
             )
-            cfg.update({
-                "vocab_to_index": vocab_to_idx,
-                "index_to_vocab": idx_to_vocab,
-                "vocab_size":     len(vocab_to_idx),
-                "text_len":       max_len
-            })
         else:
-            vocab_to_idx = cfg["vocab_to_index"]
-            max_len      = cfg["text_len"]
+            self.vocab_to_index = cfg["vocab_to_index"]
+            self.max_len = cfg["text_len"]
             seqs = cw.build_eval_sequences(
-                data["Comment"].tolist(), vocab_to_idx, max_len
+                data["Comment"].tolist(),
+                self.tokenizer,
+                self.max_len
             )
-
-        self.vocab_to_index = vocab_to_idx
-        self.max_len        = max_len
 
         data["Comment"] = pd.Series(list(seqs), index=data.index)
         data.loc[:, "Star"] = (data["Star"] <= 2).astype(int)

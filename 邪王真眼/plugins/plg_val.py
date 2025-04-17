@@ -61,8 +61,8 @@ class ValEvaluationPlugin(PluginBase):
             "mode":   "val",
             "epoch":  ctx.epoch + 1,
             "lr":     round(ctx.optimizer.param_groups[0]['lr'], 6),
-            "loss":   round(val_loss, 4),
-            "acc":    round(acc, 4),
+            "loss":   round(val_loss, 6),
+            "acc":    round(acc, 6),
         }
         
         if self.check_key(ctx.workspace, "logger"):
