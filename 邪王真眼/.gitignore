@@ -1,2 +1,18 @@
 ﻿dataset
-models/__pycache__
+bin-debug/
+bin-release/
+[Oo]bj/
+[Bb]in/
+__pycache__
+*.swf
+*.air
+*.ipa
+*.apk
+
+datasets/douban_comments/DMSC.csv
+datasets/cooking.stackexchange.txt
+datasets/corpus.txt
+datasets/doubanbook_top250_comments.txt
+datasets/olivetti_py3.pkz
+datasets/stopwords.txt
+datasets/Summary of Weather.csv
