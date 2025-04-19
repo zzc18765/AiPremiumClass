@@ -75,7 +75,7 @@ def collate_batch(batch):
 if __name__ == '__main__':
     # 1. 构建词汇表
     vocab = Vocabulary()
-    vocab.load_build(Config.JIEBA_DATA_PATH)
+    vocab.load_build(Config.SP_PATH)
 
     # 2. 准备数据
     with open(Config.JIEBA_DATA_PATH, 'rb') as f:
