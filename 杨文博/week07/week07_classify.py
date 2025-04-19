@@ -14,6 +14,26 @@ class Config:
     MIN_WORDS = 10
     MAX_WORDS = 150
 
+    MAX_LENGTH = 100  # 最大序列长度（超过将被截断）
+    MIN_FREQ = 3  # 词汇最小出现频率
+
+    # 模型超参数
+    EMBEDDING_DIM = 16  # 词向量维度
+    HIDDEN_SIZE = 128  # RNN隐藏层维度
+    NUM_LAYERS = 1  # RNN层数
+    DROPOUT = 0.5  # Dropout概率
+
+    # 训练配置
+    BATCH_SIZE = 64  # 批量大小
+    LEARNING_RATE = 0.001  # 学习率
+    NUM_EPOCHS = 20  # 训练轮数
+    EARLY_STOPPING = 3  # 早停轮数（验证集损失不下降时）
+
+    # 其他配置
+    SAVE_MODEL = True  # 是否保存模型
+    PRINT_EVERY = 50  # 每隔多少批次打印一次训练信息
+    SEED = 42  # 随机种子
+
 
 class CommentClassifier(ABC):
     @staticmethod
