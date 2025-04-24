@@ -1,0 +1,19 @@
+2025-04-23 17:20:32,417 - INFO - {
+    "model": "ResNet",
+    "num_classes": 10,
+    "dataset": "CIFAR10",
+    "batch_size": 64,
+    "data_root": "./邪王真眼/datasets/cifar10",
+    "optimizer": "Adam",
+    "lr": 0.001,
+    "loss_function": "CROSS_ENTROPY",
+    "epochs": 10,
+    "result_path": "./邪王真眼/previous_class02/result",
+    "momentum": 0.9,
+    "weight_decay": 0.0001
+}
+2025-04-23 17:20:38,681 - INFO - {'mode': 'train', 'epoch': 1, 'lr': 0.001, 'loss': 1.42915, 'acc': 0.483095}
+2025-04-23 17:20:39,474 - INFO - {'mode': 'val', 'epoch': 1, 'lr': 0.001, 'loss': 1.281736, 'acc': 0.5439}
+2025-04-23 17:20:45,745 - INFO - {'mode': 'train', 'epoch': 2, 'lr': 0.001, 'loss': 1.035577, 'acc': 0.631622}
+2025-04-23 17:20:46,536 - INFO - {'mode': 'val', 'epoch': 2, 'lr': 0.001, 'loss': 1.028576, 'acc': 0.635}
+2025-04-23 17:20:52,714 - INFO - {'mode': 'train', 'epoch': 3, 'lr': 0.001, 'loss': 0.888955, 'acc': 0.685199}

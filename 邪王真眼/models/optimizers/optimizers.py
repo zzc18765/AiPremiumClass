@@ -7,6 +7,10 @@ from typing import Dict
 
 class OptimizerType(Enum):
     SGD = "SGD"
+    Adam = "Adam"
+    
+    My_SGD = "my_SGD"
+    My_Adam = "my_Adam"
 
 
 def get_optimizer(cfg: Dict[str, dict], model: nn.Module):
@@ -24,5 +28,13 @@ def get_optimizer(cfg: Dict[str, dict], model: nn.Module):
 
     if optimizer == OptimizerType.SGD:
         return optim.SGD(params=model.parameters(), lr=lr, momentum=momentum, weight_decay=weight_decay)
+    elif optimizer == OptimizerType.Adam:
+        return optim.Adam(params=model.parameters(), lr=lr)
+    elif optimizer == OptimizerType.My_SGD:
+        from .my_sgd import MySGD
+        return MySGD(params=model.parameters(), lr=lr)
+    elif optimizer == OptimizerType.My_Adam:
+        from .my_adam import MyAdam
+        return MyAdam(params=model.parameters(), lr=lr)
     
     return None

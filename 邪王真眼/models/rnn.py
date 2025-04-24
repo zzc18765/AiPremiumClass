@@ -1,42 +1,73 @@
 import torch.nn as nn
 
+from typing import Any, Dict
+from torch.nn.utils.rnn import pack_padded_sequence, pad_packed_sequence
 
-class RNNModel(nn.Module):
-    def __init__(self, model_type='rnn', input_size=64, hidden_size=128, num_classes=40, 
-                 num_layers=1, dropout=0.0):
-        super(RNNModel, self).__init__()
-        self.model_type = model_type.lower()
-        self.hidden_size = hidden_size
-        self.num_layers = num_layers
+
+class RNN(nn.Module):
+    def __init__(self, cfg: Dict[str, Any]):
+        super(RNN, self).__init__()
+        rnn_type  = cfg.get("rnn_type").lower()
+        input_size  = cfg.get("input_size")
+        hidden_size = cfg.get("hidden_size", input_size)
+        num_classes = cfg.get("num_classes")
+        num_layers  = cfg.get("num_layers")
+        dropout     = cfg.get("dropout", 0.0)
+        vocab_size  = cfg.get("vocab_size", None)
         
-        if self.model_type == 'rnn':
+        if vocab_size is not None:
+            self.embedding = nn.Embedding(
+                num_embeddings=vocab_size,
+                embedding_dim=input_size,
+                padding_idx=1
+            )
+            
+        if rnn_type == 'rnn':
             self.rnn = nn.RNN(input_size, hidden_size, num_layers=num_layers,
                              batch_first=True, bidirectional=False,
-                             dropout=dropout if num_layers > 1 else 0.0)
-        elif self.model_type == 'lstm':
+                             dropout=dropout)
+        elif rnn_type == 'lstm':
             self.rnn = nn.LSTM(input_size, hidden_size, num_layers=num_layers,
                               batch_first=True, bidirectional=False,
-                              dropout=dropout if num_layers > 1 else 0.0)
-        elif self.model_type == 'gru':
+                              dropout=dropout)
+        elif rnn_type == 'gru':
             self.rnn = nn.GRU(input_size, hidden_size, num_layers=num_layers,
                              batch_first=True, bidirectional=False,
-                             dropout=dropout if num_layers > 1 else 0.0)
-        elif self.model_type == 'birnn':
+                             dropout=dropout)
+        elif rnn_type == 'birnn':
             self.rnn = nn.RNN(input_size, hidden_size, num_layers=num_layers,
                              batch_first=True, bidirectional=True,
-                             dropout=dropout if num_layers > 1 else 0.0)
+                             dropout=dropout)
         else:
-            raise ValueError(f"Unknown model type: {model_type}. "
+            raise ValueError(f"Unknown model type: {rnn_type}. "
                            f"Available options are: 'rnn', 'lstm', 'gru', 'birnn'")
         
-        fc_input_size = hidden_size * (2 if model_type == 'birnn' else 1)
+        fc_input_size = hidden_size * (2 if rnn_type == 'birnn' else 1)
 
         self.fc = nn.Linear(fc_input_size, num_classes)
         
-    def forward(self, x):
-        out, _ = self.rnn(x)
+    def forward(self, x, mask):
+        if hasattr(self, 'embedding'):
+            x = self.embedding(x)
         
-        out = out[:, -1, :]
+        if mask is not None:
+            lengths = mask.sum(dim=1).long()
+            
+            packed = pack_padded_sequence(
+                x, lengths.cpu(),
+                batch_first=True,
+                enforce_sorted=False
+            )
+            packed_out, _ = self.rnn(packed)
+            out_padded, _ = pad_packed_sequence(packed_out, batch_first=True)
+            
+            idx = (lengths - 1) \
+                  .view(-1, 1, 1) \
+                  .expand(-1, 1, out_padded.size(2))  # [B,1,H]
+            out = out_padded.gather(1, idx).squeeze(1)  # [B, H]
+        else:
+            out, _ = self.rnn(x)
+            out = out[:, -1, :]
         
         out = self.fc(out)
-        return out
+        return {'out': out}

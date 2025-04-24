@@ -44,8 +44,6 @@ class PluginType(Enum):
 
     BATCH_BEGIN = 4
     BATCH_END = 5
-    
-    DEL = 6
 
 
 class Trainer(plugins.PluginsItem):
@@ -76,16 +74,18 @@ class Trainer(plugins.PluginsItem):
             self.model.train()
             running_loss = 0.0
 
-            for batch, (inputs, labels) in enumerate(self.train_loader):
+            for batch, batch_data in enumerate(self.train_loader):
                 self.context.batch = batch
                 self.run_plugins(PluginType.BATCH_BEGIN, self.context)
-                inputs = inputs.to(self.device)
-                labels = labels.to(self.device)
-                self.context.inputs = inputs
+
+                batch_data = {k: v.to(self.device) for k, v in batch_data.items()}
+                labels = batch_data.pop("label")
+
+                self.context.inputs = batch_data
                 self.context.labels = labels
 
                 self.optimizer.zero_grad()
-                outputs = self.model(inputs)['out']
+                outputs = self.model(**batch_data)['out']
                 self.context.outputs = outputs
                 loss = self.criterion(outputs, labels)
                 self.context.loss = loss
@@ -101,6 +101,3 @@ class Trainer(plugins.PluginsItem):
             self.run_plugins(PluginType.EPOCH_END, self.context)
             
         self.run_plugins(PluginType.TRAIN_END, self.context)
-    
-    def __del__(self):
-        self.run_plugins(PluginType.DEL, self.context)
