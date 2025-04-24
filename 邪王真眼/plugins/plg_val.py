@@ -2,7 +2,7 @@ import torch
 
 from .plugins_base import PluginBase
 from trainer.trainer import PluginType, TrainContext
-
+from models.losses.loss_functions import LossFunctionType
 
 class ValEvaluationPlugin(PluginBase):
     plugin_hooks = {
@@ -13,14 +13,22 @@ class ValEvaluationPlugin(PluginBase):
         self.history = []
     
     @staticmethod
-    def _batch_correct(logits, targets):
+    def _single_label_correct(logits, targets):
         preds = logits.argmax(dim=1)
-        return (preds == targets).sum()
+        return (preds == targets).sum().item()
+    
+    @staticmethod
+    def _multi_label_correct(logits, labels):
+        preds       = (torch.sigmoid(logits) > 0.5)
+        targets     = (labels > 0.5)
+        return preds.eq(targets).all(dim=1).sum().item()
     
     def evaluate(self, ctx: TrainContext):
         if (ctx.epoch + 1) % 1 != 0:
             ctx.workspace['val_acc'] = None
             return
+
+        loss_function : LossFunctionType = ctx.cfg.get("loss_function")
         
         model, val_loader, criterion, device = (
             ctx.model, ctx.val_loader, ctx.criterion, ctx.device
@@ -34,16 +42,22 @@ class ValEvaluationPlugin(PluginBase):
         tot_correct = 0
 
         with torch.no_grad():
-            for inputs, targets in val_loader:
-                inputs = inputs.to(device)
-                targets = targets.to(device)
+            for batch_data in val_loader:
+                batch_data = {k: v.to(device) for k, v in batch_data.items()}
+                labels = batch_data.pop("label")
 
-                logits = model(inputs)['out'].squeeze(1)
+                logits = model(**batch_data)['out'].squeeze(1)
 
-                loss = criterion(logits, targets.long())
+                if loss_function == LossFunctionType.BCE_WITH_LOGITS:
+                    loss = criterion(logits, labels)
+                else:
+                    loss = criterion(logits, labels.long())
                 total_loss += loss.item()
 
-                tot_correct += self._batch_correct(logits, targets).item()
+                if loss_function == LossFunctionType.BCE_WITH_LOGITS:
+                    tot_correct += self._multi_label_correct(logits, labels)
+                else:
+                    tot_correct += self._single_label_correct(logits, labels)
         
 
         n = len(val_loader.dataset)

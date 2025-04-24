@@ -1,0 +1,39 @@
+2025-04-24 09:48:02,369 - INFO - {
+    "model": "RNN",
+    "rnn_type": "gru",
+    "input_size": 64,
+    "hidden_size": 64,
+    "num_classes": 11,
+    "num_layers": 2,
+    "vocab_size": 30522,
+    "dataset": "Sem_Eval",
+    "batch_size": 32,
+    "data_root": "./邪王真眼/datasets/sem_eval",
+    "optimizer": "Adam",
+    "lr": 0.01,
+    "loss_function": "BCE_WITH_LOGITS",
+    "epochs": 10,
+    "result_path": "./邪王真眼/previous_class03/result",
+    "momentum": 0.9,
+    "weight_decay": 0.0001
+}
+2025-04-24 09:48:11,113 - INFO - {'mode': 'train', 'epoch': 1, 'lr': 0.01, 'loss': 0.444876, 'acc': 0.095951}
+2025-04-24 09:48:12,146 - INFO - {'mode': 'val', 'epoch': 1, 'lr': 0.01, 'loss': 0.412315, 'acc': 0.15237}
+2025-04-24 09:48:23,359 - INFO - {'mode': 'train', 'epoch': 2, 'lr': 0.01, 'loss': 0.351797, 'acc': 0.209214}
+2025-04-24 09:48:24,420 - INFO - {'mode': 'val', 'epoch': 2, 'lr': 0.01, 'loss': 0.393248, 'acc': 0.179458}
+2025-04-24 09:48:35,571 - INFO - {'mode': 'train', 'epoch': 3, 'lr': 0.01, 'loss': 0.300919, 'acc': 0.268339}
+2025-04-24 09:48:36,628 - INFO - {'mode': 'val', 'epoch': 3, 'lr': 0.01, 'loss': 0.403069, 'acc': 0.179458}
+2025-04-24 09:48:47,667 - INFO - {'mode': 'train', 'epoch': 4, 'lr': 0.01, 'loss': 0.271762, 'acc': 0.301056}
+2025-04-24 09:48:48,746 - INFO - {'mode': 'val', 'epoch': 4, 'lr': 0.01, 'loss': 0.411112, 'acc': 0.187359}
+2025-04-24 09:48:59,815 - INFO - {'mode': 'train', 'epoch': 5, 'lr': 0.01, 'loss': 0.257431, 'acc': 0.320569}
+2025-04-24 09:49:00,883 - INFO - {'mode': 'val', 'epoch': 5, 'lr': 0.01, 'loss': 0.426944, 'acc': 0.194131}
+2025-04-24 09:49:11,883 - INFO - {'mode': 'train', 'epoch': 6, 'lr': 0.01, 'loss': 0.245705, 'acc': 0.337441}
+2025-04-24 09:49:12,953 - INFO - {'mode': 'val', 'epoch': 6, 'lr': 0.01, 'loss': 0.441471, 'acc': 0.167043}
+2025-04-24 09:49:24,014 - INFO - {'mode': 'train', 'epoch': 7, 'lr': 0.01, 'loss': 0.232302, 'acc': 0.363116}
+2025-04-24 09:49:25,072 - INFO - {'mode': 'val', 'epoch': 7, 'lr': 0.01, 'loss': 0.455709, 'acc': 0.180587}
+2025-04-24 09:49:36,151 - INFO - {'mode': 'train', 'epoch': 8, 'lr': 0.01, 'loss': 0.228247, 'acc': 0.374707}
+2025-04-24 09:49:37,215 - INFO - {'mode': 'val', 'epoch': 8, 'lr': 0.01, 'loss': 0.463941, 'acc': 0.174944}
+2025-04-24 09:49:48,283 - INFO - {'mode': 'train', 'epoch': 9, 'lr': 0.01, 'loss': 0.225008, 'acc': 0.381162}
+2025-04-24 09:49:49,338 - INFO - {'mode': 'val', 'epoch': 9, 'lr': 0.01, 'loss': 0.485144, 'acc': 0.1693}
+2025-04-24 09:50:00,397 - INFO - {'mode': 'train', 'epoch': 10, 'lr': 0.01, 'loss': 0.22044, 'acc': 0.38615}
+2025-04-24 09:50:01,453 - INFO - {'mode': 'val', 'epoch': 10, 'lr': 0.01, 'loss': 0.46676, 'acc': 0.168172}

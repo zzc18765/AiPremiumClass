@@ -1,10 +1,10 @@
 import torch.nn as nn
 
-from typing import Dict
+from typing import Any, Dict
 
 
 class RNNTextClassifier(nn.Module):
-    def __init__(self, cfg: Dict):
+    def __init__(self, cfg: Dict[str, Any]):
         super().__init__()
         self.num_classes = cfg["num_classes"]
 
