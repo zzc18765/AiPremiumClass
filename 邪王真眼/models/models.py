@@ -13,9 +13,23 @@ class ModelType(Enum):
     CBOW = 'cbow'
     SkipGram = 'skip_gram'
 
+    @classmethod
+    def from_str(cls, label: str) -> "ModelType":
+        if label in cls.__members__:
+            return cls[label]
+        
+        for member in cls:
+            if member.value.lower() == label.lower():
+                return member
+        raise ValueError(f"Unknown ModelType: {label!r}. "
+                         f"Valid names: {list(cls.__members__.keys())}, "
+                         f"values: {[m.value for m in cls]}")
+
 
 def get_model(cfg: Dict[str, Any]):
     model_type = cfg.get('model')
+    if isinstance(model_type, str):
+        model_type = ModelType.from_str(model_type)
     model = None
 
     if model_type == ModelType.RNN_TEXT_CLASSIFIER:

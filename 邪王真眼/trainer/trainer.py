@@ -79,15 +79,15 @@ class Trainer(plugins.PluginsItem):
                 self.run_plugins(PluginType.BATCH_BEGIN, self.context)
 
                 batch_data = {k: v.to(self.device) for k, v in batch_data.items()}
-                labels = batch_data.pop("label")
+                label = batch_data.pop("label")
 
                 self.context.inputs = batch_data
-                self.context.labels = labels
+                self.context.labels = label
 
                 self.optimizer.zero_grad()
                 outputs = self.model(**batch_data)['out']
                 self.context.outputs = outputs
-                loss = self.criterion(outputs, labels)
+                loss = self.criterion(outputs, label)
                 self.context.loss = loss
                 loss.backward()
                 self.optimizer.step()

@@ -46,7 +46,7 @@ class RNN(nn.Module):
 
         self.fc = nn.Linear(fc_input_size, num_classes)
         
-    def forward(self, x, mask):
+    def forward(self, x, mask=None):
         if hasattr(self, 'embedding'):
             x = self.embedding(x)
         
