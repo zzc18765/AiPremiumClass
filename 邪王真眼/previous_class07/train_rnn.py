@@ -11,7 +11,7 @@ if __name__ == "__main__":
     cfg = load_train_config("./邪王真眼/configs/previous_class07_rnn.py")
     trainer = Trainer(cfg)
     trainer.add_plugins([
-        #plugins.PluginModelTestRun,
+        plugins.PluginModelTestRun,
         plugins.PluginInitInfo,
         plugins.PluginLogger,
         plugins.PluginSaveConfig,

@@ -16,9 +16,9 @@ def to_one_hot(logits: Tensor, target: Tensor) -> Tensor:
     return one_hot
 
 
-def my_cross_entropy(logits: Tensor, target: Tensor) -> Tensor:
-    probs = softmax(logits)
-    one_hot = to_one_hot(logits, target)
+def my_cross_entropy(input: Tensor, target: Tensor) -> Tensor:
+    probs = softmax(input)
+    one_hot = to_one_hot(input, target)
     log_probs = probs.log()
     loss = -(one_hot * log_probs).sum(dim=1)
     return loss.mean()

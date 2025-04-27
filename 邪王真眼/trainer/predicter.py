@@ -72,14 +72,20 @@ class Predicter(plugins.PluginsItem):
                 self.run_plugins(PluginType.BATCH_BEGIN, self.context)
                 
                 batch_data = {k: v.to(self.device) for k, v in batch_data.items()}
-                labels = batch_data.pop("label")
+                label = batch_data.pop("label")
 
                 self.context.inputs = batch_data
-                self.context.labels = labels
+                self.context.labels = label
 
-                outputs = self.model(**batch_data)['out']
+                outputs = self.model(**batch_data)
                 self.context.outputs = outputs
-                loss = self.criterion(outputs, labels)
+                outputs['input'] = outputs.pop('out')
+                if 'loss' in outputs:
+                    loss = outputs['loss']
+                else:
+                    outputs_t = {'input': outputs['out'], **{k: v for k, v in outputs.items() if k != 'out'}}
+                    loss = self.criterion(target=label, **outputs_t)
+                
                 self.context.loss = loss
 
                 running_loss += loss.item()

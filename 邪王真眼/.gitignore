@@ -10,3 +10,5 @@ __pycache__
 
 datasets/sem_eval/SemEval 2018 - task E-c
 datasets/cifar10/cifar-10-batches-py
+datasets/kmnist/KMNIST
+datasets/olivetti_faces/olivetti_py3.pkz

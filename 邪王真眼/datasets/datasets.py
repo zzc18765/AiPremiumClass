@@ -12,6 +12,10 @@ class DatasetType(Enum):
     Corpus_P6 = "corpus_p6"
     E_Commerce_Comments = "e_commerce_comments"
     E_Commerce_Comments_Idx = "e_commerce_comments_idx"
+    BREAST_CANCER = "breast_cancer"
+    KMNIST = "kmnist"
+    Olivetti_Faces = "olivetti_faces"
+    NER = "ner"
 
     @classmethod
     def from_str(cls, label: str) -> "DatasetType":
@@ -64,6 +68,22 @@ def get_dataset(cfg: Dict[str, Any]):
         from .e_commerce_comments.generator_idx import ECommerceComments
         train_dataset = ECommerceComments('train', cfg)
         val_dataset = ECommerceComments('val', cfg)
+    elif dataset_type == DatasetType.BREAST_CANCER:
+        from .breast_cancer.generator import BreastCancer
+        train_dataset = BreastCancer('train', cfg)
+        val_dataset = BreastCancer('val', cfg)
+    elif dataset_type == DatasetType.KMNIST:
+        from .kmnist.generator import KMNIST
+        train_dataset = KMNIST('train', cfg)
+        val_dataset = KMNIST('val', cfg)
+    elif dataset_type == DatasetType.Olivetti_Faces:
+        from .olivetti_faces.generator import OlivettiFaces
+        train_dataset = OlivettiFaces('train', cfg)
+        val_dataset = OlivettiFaces('val', cfg)
+    elif dataset_type == DatasetType.NER:
+        from .corpus_p9.generator import NER
+        train_dataset = NER('train', cfg)
+        val_dataset = NER('val', cfg)
 
     train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, drop_last=True)
     val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False)

@@ -85,9 +85,14 @@ class Trainer(plugins.PluginsItem):
                 self.context.labels = label
 
                 self.optimizer.zero_grad()
-                outputs = self.model(**batch_data)['out']
+                outputs = self.model(**batch_data)
                 self.context.outputs = outputs
-                loss = self.criterion(outputs, label)
+                if 'loss' in outputs:
+                    loss = outputs['loss']
+                else:
+                    outputs_t = {'input': outputs['out'], **{k: v for k, v in outputs.items() if k != 'out'}}
+                    loss = self.criterion(target=label, **outputs_t)
+                
                 self.context.loss = loss
                 loss.backward()
                 self.optimizer.step()

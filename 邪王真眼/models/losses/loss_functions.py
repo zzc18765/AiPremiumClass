@@ -14,7 +14,8 @@ class LossFunctionType(Enum):
 def get_loss_function(cfg: Dict[str, dict]):
     loss_function = cfg.get('loss_function')
     if loss_function == LossFunctionType.CROSS_ENTROPY:
-        return nn.CrossEntropyLoss(ignore_index=255)
+        ignore_index = cfg.get('ignore_index', -100)
+        return nn.CrossEntropyLoss(ignore_index=ignore_index)
     elif loss_function == LossFunctionType.BCE_WITH_LOGITS:
         return nn.BCEWithLogitsLoss()
     elif loss_function == LossFunctionType.MY_CROSS_ENTROPY:

@@ -12,6 +12,8 @@ class ModelType(Enum):
     RNN = 'rnn'
     CBOW = 'cbow'
     SkipGram = 'skip_gram'
+    CNN = 'cnn'
+    BertClassifier = 'bert_classifier'
 
     @classmethod
     def from_str(cls, label: str) -> "ModelType":
@@ -50,6 +52,12 @@ def get_model(cfg: Dict[str, Any]):
     elif model_type == ModelType.SkipGram:
         from .skip_gram import SkipGram
         model = SkipGram(cfg)
+    elif model_type == ModelType.CNN:
+        from .cnn import CNN
+        model = CNN(cfg)
+    elif model_type == ModelType.BertClassifier:
+        from .bert_classifier import BertClassifier
+        model = BertClassifier(cfg)
     
     if torch.cuda.device_count() > 1:
         model = nn.DataParallel(model)

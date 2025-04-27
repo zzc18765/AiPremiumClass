@@ -14,7 +14,7 @@ class ValEvaluationPlugin(PluginBase):
     
     @staticmethod
     def _single_label_correct(logits, targets):
-        preds = logits.argmax(dim=1)
+        preds = logits.argmax(dim=-1)
         return (preds == targets).sum().item()
     
     @staticmethod

@@ -126,7 +126,7 @@ def get_most_similar_books(bm25, all_terms, selected_book, top_n=5):
 
 
 def main():
-    dataset_path = './邪王真眼/dataset/'
+    dataset_path = './邪王真眼/datasets/'
     comments_file = os.path.join(dataset_path, 'doubanbook_top250_comments.txt')
     stopwords_file = os.path.join(dataset_path, 'stopwords.txt')
 
