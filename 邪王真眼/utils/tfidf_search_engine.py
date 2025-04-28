@@ -14,10 +14,8 @@ class TfidfSearchEngine:
         with open(file_path, encoding="utf8") as f:
             documents = json.load(f)
         corpus = [doc["title"] + "\n" + doc["content"] for doc in documents]
-        tokenized = TFIDFCalculator.tokenize_corpus(corpus)
-        tf = TFIDFCalculator.compute_tf(tokenized)
-        idf = TFIDFCalculator.compute_idf(tokenized)
-        tfidf = TFIDFCalculator.compute_tfidf(tokenized, tf, idf)
+
+        tfidf, _ = TFIDFCalculator.compute_tfidf(corpus)
         return tfidf, corpus
 
     def search(self, query: str) -> List[Tuple[int, float]]:

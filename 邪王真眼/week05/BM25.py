@@ -1,10 +1,10 @@
 import os
-import math
+import sys
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 import random
-import jieba
 import numpy as np
 
-from collections import Counter
+from utils.bm25_calculator import BM25Calculator
 
 
 def load_stopwords(file_path):
@@ -39,55 +39,6 @@ def load_and_preprocess_comments(file_path):
                 comments[prev_book_name][-1] += terms[0]
             
     return comments
-
-
-def chinese_tokenizer(text, stopwords):
-    words = jieba.lcut(text)
-    return [word for word in words if word not in stopwords]
-
-
-def calculate_bm25(comments, stopwords, k1=1.5, b=0.75):
-    N = len(comments)
-    doc_lengths = {}
-    avgdl = 0
-    all_terms = []
-    doc_term_freq = {}
-    
-    for book_name, comments_list in comments.items():
-        all_terms_for_book = []
-        for comment in comments_list:
-            words = chinese_tokenizer(comment, stopwords)
-            all_terms_for_book.extend(words)
-            all_terms.extend(words)
-        
-        doc_lengths[book_name] = len(all_terms_for_book)
-        avgdl += len(all_terms_for_book)
-        doc_term_freq[book_name] = Counter(all_terms_for_book)
-    
-    avgdl /= N
-    
-    # IDF
-    idf = {}
-    
-    unique_terms = set(all_terms)
-    
-    for term in unique_terms:
-        doc_count_with_term = sum(1 for doc_terms in doc_term_freq.values() if term in doc_terms)
-        idf[term] = math.log((N - doc_count_with_term + 0.5) / (doc_count_with_term + 0.5))
-    
-    # BM25
-    bm25_scores = {}
-    
-    for book_name, term_freq in doc_term_freq.items():
-        bm25_scores[book_name] = {}
-        doc_length = doc_lengths[book_name]
-        
-        for term, tf in term_freq.items():
-            numerator = tf * (k1 + 1)
-            denominator = tf + k1 * (1 - b + b * (doc_length / avgdl))
-            bm25_scores[book_name][term] = idf.get(term, 0) * (numerator / denominator)
-    
-    return bm25_scores, list(unique_terms)
 
 
 def get_book_bm25_vector(BM25, book_name, all_terms):
@@ -126,7 +77,7 @@ def get_most_similar_books(bm25, all_terms, selected_book, top_n=5):
 
 
 def main():
-    dataset_path = './邪王真眼/datasets/'
+    dataset_path = './邪王真眼/datasets/douban_comments_top250/'
     comments_file = os.path.join(dataset_path, 'doubanbook_top250_comments.txt')
     stopwords_file = os.path.join(dataset_path, 'stopwords.txt')
 
@@ -137,7 +88,7 @@ def main():
     selected_book = '盗墓笔记'
     print(f"Selected Book: {selected_book}")
 
-    bm25, all_terms = calculate_bm25(comments, stopwords)
+    bm25, all_terms = BM25Calculator.compute_bm25(comments, stopwords)
 
     similar_books = get_most_similar_books(bm25, all_terms, selected_book, top_n=5)
 

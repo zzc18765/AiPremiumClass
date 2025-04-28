@@ -18,8 +18,7 @@ class TfidfSummarizer:
             content = doc["content"].replace("\n", " ")
             corpus.append(f"{title}\n{content}")
 
-        tokenized = TFIDFCalculator.tokenize_corpus(corpus)
-        tf_idf_dict = TFIDFCalculator.compute_tfidf(tokenized)
+        tf_idf_dict, _ = TFIDFCalculator.compute_tfidf(corpus)
 
         return tf_idf_dict, corpus
 

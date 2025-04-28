@@ -2,16 +2,21 @@ import math
 import unicodedata
 
 from collections import defaultdict
-from typing import List, Dict, Optional
+from typing import List, Dict, Optional, Tuple
 
 from .jieba_segmenter import JiebaSegmenter
 
 
 class TFIDFCalculator:
     @staticmethod
-    def tokenize_corpus(corpus: List[str]) -> List[List[str]]:
+    def tokenize_documents(
+        documents: Dict[str, List[str]],
+        stopwords: Optional[List[str]] = []
+    ) -> Tuple[Dict[str, List[str]], List[str]]:
         def is_valid_token(tok: str) -> bool:
             for ch in tok:
+                if ch in stopwords:
+                    return False
                 cat = unicodedata.category(ch)
                 if not (cat.startswith('P')
                         or cat.startswith('Z')
@@ -19,19 +24,23 @@ class TFIDFCalculator:
                     return True
             return False
 
-        tokenized: List[List[str]] = []
-        for text in corpus:
-            words = JiebaSegmenter.cut(text)
+        doc_terms = {}
+        all_terms = []
+        
+        for doc_name, doc_contents in documents.items():
+            terms_for_doc = []
+            for content in doc_contents:
+                words = [word for word in JiebaSegmenter.cut(content) if is_valid_token(word)]
+                terms_for_doc.extend(words)
+                all_terms.extend(words)
+            doc_terms[doc_name] = terms_for_doc
             
-            filtered = [w for w in words if is_valid_token(w)]
-            tokenized.append(filtered)
-
-        return tokenized
+        return doc_terms, all_terms
 
     @staticmethod
     def compute_tf(tokenized_corpus: List[List[str]]) -> Dict[int, Dict[str, float]]:
         tf: Dict[int, Dict[str, float]] = {}
-        for doc_idx, words in enumerate(tokenized_corpus):
+        for title, words in tokenized_corpus.items():
             counts: Dict[str, float] = defaultdict(float)
             for w in words:
                 counts[w] += 1.0
@@ -39,7 +48,7 @@ class TFIDFCalculator:
             total = sum(counts.values())
             for w in counts:
                 counts[w] = counts[w] / total if total > 0 else 0.0
-            tf[doc_idx] = dict(counts)
+            tf[title] = dict(counts)
         return tf
 
     @staticmethod
@@ -61,10 +70,12 @@ class TFIDFCalculator:
 
     @staticmethod
     def compute_tfidf(
-        tokenized_corpus: List[List[str]],
+        corpus: Dict[str, List[str]],
+        stopwords: Optional[List[str]] = [],
         tf: Optional[Dict[int, Dict[str, float]]] = None,
         idf: Optional[Dict[str, float]] = None
     ) -> Dict[int, Dict[str, float]]:
+        tokenized_corpus, all_terms = TFIDFCalculator.tokenize_documents(corpus, stopwords)
         if tf is None:
             tf = TFIDFCalculator.compute_tf(tokenized_corpus)
         if idf is None:
@@ -77,4 +88,4 @@ class TFIDFCalculator:
                 scores[w] = tf_val * idf.get(w, 0.0)
             tfidf[doc_idx] = scores
 
-        return tfidf
+        return tfidf, all_terms

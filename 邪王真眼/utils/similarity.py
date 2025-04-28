@@ -1,9 +1,12 @@
+import os
+import sys
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 import json
 import math
 
 from typing import List, Dict, Tuple
 
-from .tfidf_calculator import TFIDFCalculator
+from utils.tfidf_calculator import TFIDFCalculator
 
 
 class TfidfDocumentSimilarity:
@@ -15,31 +18,28 @@ class TfidfDocumentSimilarity:
         with open(file_path, encoding="utf8") as f:
             documents = json.load(f)
 
-        corpus = []
+        corpus = {}
         for doc in documents:
             title = doc["title"].replace("\n", " ")
             content = doc["content"].replace("\n", " ")
-            corpus.append(f"{title}\n{content}")
+            corpus[title] = f"{title}\n{content}"
 
-        tokenized = TFIDFCalculator.tokenize_corpus(corpus)
-        tfidf_dict = TFIDFCalculator.compute_tfidf(tokenized)
-
-        vocab_set = set()
-        for mapping in tfidf_dict.values():
-            top_terms = sorted(mapping.items(), key=lambda x: x[1], reverse=True)[:top_k]
-            for w, _ in top_terms:
-                vocab_set.add(w)
-        vocab = list(vocab_set)
+        tfidf_dict, vocab = TFIDFCalculator.compute_tfidf(corpus)
 
         return tfidf_dict, vocab, corpus
 
     def _doc_to_vec(self, passage: str) -> List[float]:
-        tokens = TFIDFCalculator.tokenize_corpus([passage])[0]
+        tokens, _ = TFIDFCalculator.tokenize_documents({'': [passage]})
+        tokens = tokens['']
         total = len(tokens) or 1
-        return [tokens.count(term) / total for term in self.vocab]
+        return [tokens[0].count(term) / total for term in self.vocab]
 
     def _calculate_corpus_vectors(self) -> List[List[float]]:
-        return [self._doc_to_vec(doc) for doc in self.corpus]
+        vec = []
+        for title, docs in self.corpus.items():
+            vec.append(self._doc_to_vec(docs))
+
+        return vec
 
     @staticmethod
     def _cosine_similarity(vec1: List[float], vec2: List[float]) -> float:

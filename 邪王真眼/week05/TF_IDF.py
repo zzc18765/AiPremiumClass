@@ -1,12 +1,13 @@
 import os
-import math
+import sys
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 import random
-import jieba
 import numpy as np
 
-from collections import Counter
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
+
+from utils.tfidf_calculator import TFIDFCalculator
 
 
 def load_stopwords(file_path):
@@ -23,6 +24,9 @@ def load_and_preprocess_comments(file_path):
         for i, line in enumerate(lines):
             if i == 0:
                 continue
+            
+            if i == 50000:
+                break
 
             terms = line.split("\t")
             if len(terms) >= 6:
@@ -38,42 +42,6 @@ def load_and_preprocess_comments(file_path):
                 comments[prev_book_name][-1] += terms[0]
             
     return comments
-
-
-def chinese_tokenizer(text, stopwords):
-    words = jieba.lcut(text)
-    return [word for word in words if word not in stopwords]
-
-
-def calculate_tfidf(comments, stopwords):
-    doc_term_freq = {}
-    all_terms = []
-
-    for book_name, comments_list in comments.items():
-        all_terms_for_book = []
-        for comment in comments_list:
-            words = chinese_tokenizer(comment, stopwords)
-            all_terms_for_book.extend(words)
-            all_terms.extend(words)
-        
-        doc_term_freq[book_name] = Counter(all_terms_for_book)
-
-    idf = {}
-    total_docs = len(comments)
-    unique_terms = set(all_terms)
-    
-    for term in unique_terms:
-        doc_count_with_term = sum(1 for doc_terms in doc_term_freq.values() if term in doc_terms)
-        idf[term] = math.log((total_docs + 1) / (1 + doc_count_with_term))
-
-    tfidf = {}
-
-    for book_name, term_freq in doc_term_freq.items():
-        tfidf[book_name] = {}
-        for term, tf in term_freq.items():
-            tfidf[book_name][term] = tf * idf.get(term, 0)
-
-    return tfidf, all_terms
 
 
 def get_book_tfidf_vector(tfidf, book_name, all_terms):
@@ -112,7 +80,7 @@ def get_most_similar_books(tfidf, all_terms, selected_book, top_n=5):
 
 
 def main():
-    dataset_path = './邪王真眼/dataset/'
+    dataset_path = './邪王真眼/datasets/douban_comments_top250/'
     comments_file = os.path.join(dataset_path, 'doubanbook_top250_comments.txt')
     stopwords_file = os.path.join(dataset_path, 'stopwords.txt')
 
@@ -123,10 +91,10 @@ def main():
     selected_book = '盗墓笔记'
     print(f"Selected Book: {selected_book}")
 
-    manual = True
+    manual = False
 
     if manual == True:
-        tfidf, all_terms = calculate_tfidf(comments, stopwords)
+        tfidf, all_terms = TFIDFCalculator.compute_tfidf(comments, stopwords)
 
         similar_books = get_most_similar_books(tfidf, all_terms, selected_book, top_n=5)
 
@@ -136,7 +104,7 @@ def main():
     
     else:
         vec = TfidfVectorizer(stop_words=list(stopwords))
-        tokenized_comments = [' '.join(chinese_tokenizer(' '.join(comms), stopwords)) for comms in comments.values()]
+        tokenized_comments = [' '.join(TFIDFCalculator.tokenize_documents(' '.join(comms), stopwords)) for comms in comments.values()]
         tfidf = vec.fit_transform(tokenized_comments)
         similar = cosine_similarity(tfidf)
 

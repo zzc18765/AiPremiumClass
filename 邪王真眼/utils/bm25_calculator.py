@@ -1,4 +1,5 @@
 import math
+import unicodedata
 
 from collections import Counter
 from typing import Dict, List, Tuple, Optional
@@ -10,10 +11,18 @@ class BM25Calculator:
     @staticmethod
     def tokenize_documents(
         documents: Dict[str, List[str]],
-        stopwords: Optional[List[str]] = None
+        stopwords: Optional[List[str]] = []
     ) -> Tuple[Dict[str, List[str]], List[str]]:
-        if stopwords is None:
-            stopwords = []
+        def is_valid_token(tok: str) -> bool:
+            for ch in tok:
+                if ch in stopwords:
+                    return False
+                cat = unicodedata.category(ch)
+                if not (cat.startswith('P')
+                        or cat.startswith('Z')
+                        or cat.startswith('C')):
+                    return True
+            return False
 
         doc_terms = {}
         all_terms = []
@@ -21,7 +30,7 @@ class BM25Calculator:
         for doc_name, doc_contents in documents.items():
             terms_for_doc = []
             for content in doc_contents:
-                words = [word for word in JiebaSegmenter.cut(content) if word not in stopwords]
+                words = [word for word in JiebaSegmenter.cut(content) if is_valid_token(word)]
                 terms_for_doc.extend(words)
                 all_terms.extend(words)
             doc_terms[doc_name] = terms_for_doc
