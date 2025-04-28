@@ -1,3 +1,6 @@
+import inspect
+import traceback
+
 from collections import defaultdict
 from typing import Any, Callable, Dict, List, Tuple, Union, Type
 
@@ -15,7 +18,7 @@ class PluginManager:
         plugin: Union[Callable[[Any], None], Type[PluginBase], PluginBase],
         priority: int = 100,
     ):
-        if isinstance(plugin, type) and hasattr(plugin, "plugin_hooks"):
+        if isinstance(plugin, type) and issubclass(plugin, PluginBase) and hasattr(plugin, "plugin_hooks"):
             instance = plugin()
             self.class_plugins.append(instance)
             self._register_class_plugin(instance, priority)
@@ -50,7 +53,25 @@ class PluginManager:
                 current_list.insert(i, new_entry)
                 return
         current_list.append(new_entry)
+    
+    def _get_plugin_info(self, plugin: Callable) -> str:
+        if inspect.ismethod(plugin):
+            cls_name = plugin.__self__.__class__.__name__
+            func_name = plugin.__name__
+            return f"{cls_name}.{func_name}"
+        elif inspect.isfunction(plugin):
+            return plugin.__name__
+        elif hasattr(plugin, '__class__'):
+            return plugin.__class__.__name__
+        else:
+            return str(plugin)
 
     def execute(self, plugin_type: str, context: Any):
         for _, plugin in self.plugins.get(plugin_type, []):
-            plugin(context)
+            try:
+                plugin(context)
+            except Exception as e:
+                plugin_info = self._get_plugin_info(plugin)
+                print(f"[Plugin Error] Exception in {plugin_info}: {e}")
+                traceback.print_exc()
+        

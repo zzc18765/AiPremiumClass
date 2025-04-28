@@ -46,7 +46,7 @@ class ValEvaluationPlugin(PluginBase):
         with torch.no_grad():
             for batch_data in val_loader:
                 batch_data = {k: v.to(device) for k, v in batch_data.items()}
-                labels = batch_data.pop("label")
+                label = batch_data.pop("label")
 
                 outputs = model(**batch_data)
                 logits = outputs['out']
@@ -54,13 +54,13 @@ class ValEvaluationPlugin(PluginBase):
                     loss = outputs['loss']
                 else:
                     outputs_t = {'input': outputs['out'], **{k: v for k, v in outputs.items() if k != 'out'}}
-                    loss = criterion(target=labels, **outputs_t)
+                    loss = criterion(target=label, **outputs_t)
                 total_loss += loss.item()
 
                 if loss_function == LossFunctionType.BCE_WITH_LOGITS:
-                    tot_correct += self._multi_label_correct(logits, labels)
+                    tot_correct += self._multi_label_correct(logits, label)
                 else:
-                    tot_correct += self._single_label_correct(logits, labels)
+                    tot_correct += self._single_label_correct(logits, label)
         
 
         n = len(val_loader.dataset)

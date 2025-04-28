@@ -1,6 +1,7 @@
 from abc import ABC
 from typing import Dict
 
+
 class PluginBase(ABC):
     plugin_hooks: Dict = {}
     _warned_keys = set()

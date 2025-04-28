@@ -69,17 +69,16 @@ class Predicter(plugins.PluginsItem):
         with torch.no_grad():
             for batch, batch_data in enumerate(self.val_loader):
                 self.context.batch = batch
-                self.run_plugins(PluginType.BATCH_BEGIN, self.context)
-                
                 batch_data = {k: v.to(self.device) for k, v in batch_data.items()}
                 label = batch_data.pop("label")
 
                 self.context.inputs = batch_data
                 self.context.labels = label
 
+                self.run_plugins(PluginType.BATCH_BEGIN, self.context)
+
                 outputs = self.model(**batch_data)
                 self.context.outputs = outputs
-                outputs['input'] = outputs.pop('out')
                 if 'loss' in outputs:
                     loss = outputs['loss']
                 else:

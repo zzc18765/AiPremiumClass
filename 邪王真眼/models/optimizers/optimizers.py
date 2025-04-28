@@ -2,7 +2,7 @@ import torch.nn as nn
 import torch.optim as optim
 
 from enum import Enum
-from typing import Dict
+from typing import Any, Dict
 
 
 class OptimizerType(Enum):
@@ -15,7 +15,7 @@ class OptimizerType(Enum):
     My_Adam = "my_Adam"
 
 
-def get_optimizer(cfg: Dict[str, dict], model: nn.Module):
+def get_optimizer(cfg: Dict[str, Any], model: nn.Module):
     def get_with_default(cfg, key, default_value):
         if key not in cfg:
             cfg[key] = default_value

@@ -1,6 +1,6 @@
 from .plugins_base import PluginBase
-from trainer.trainer import PluginType, TrainContext
 from torch.optim.lr_scheduler import LambdaLR
+from trainer.trainer import PluginType, TrainContext
 
 
 class PluginScheduler(PluginBase):
