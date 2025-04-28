@@ -18,7 +18,6 @@ class NER(Dataset):
             self.schema = json.load(f)
 
         self.label2id = {label: idx for idx, label in enumerate(self.schema)}
-        self.id2label = {idx: label for label, idx in self.label2id.items()}
         
         cfg["vocab_size"] = self.tokenizer.vocab_size
         cfg["num_classes"] = len(self.schema)
@@ -49,7 +48,8 @@ class NER(Dataset):
                     max_length=self.max_length,
                     padding="max_length",
                     return_tensors="pt",
-                    return_attention_mask=True
+                    return_attention_mask=True,
+                    add_special_tokens=False
                 )
                 
                 word_ids = encoding.word_ids()
@@ -69,7 +69,7 @@ class NER(Dataset):
         aligned_labels = []
         for word_idx in word_ids:
             if word_idx is None:
-                aligned_labels.append(-100)
+                aligned_labels.append(-1) # 使用crf这里必须是-1啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊赣
             else:
                 aligned_labels.append(labels[word_idx])
         return aligned_labels

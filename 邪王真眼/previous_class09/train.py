@@ -17,6 +17,6 @@ if __name__ == "__main__":
         plugins.PluginSaveConfig,
         plugins.ModelSaverPlugin,
         plugins.TrainingMetricsPlugin,
-        plugins.ValEvaluationPlugin,
+        plugins.ValCRFEvaluationPlugin,
     ])
     trainer.train()

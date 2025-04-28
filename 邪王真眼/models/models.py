@@ -6,7 +6,6 @@ from typing import Any, Dict
 
 
 class ModelType(Enum):
-    RNN_TEXT_CLASSIFIER = 'rnn_text_classifier'
     Logistic_Regression = 'logistic_regression'
     ResNet = 'resnet'
     RNN = 'rnn'
@@ -34,10 +33,7 @@ def get_model(cfg: Dict[str, Any]):
         model_type = ModelType.from_str(model_type)
     model = None
 
-    if model_type == ModelType.RNN_TEXT_CLASSIFIER:
-        from .rnn_classification import RNNTextClassifier
-        model = RNNTextClassifier(cfg)
-    elif model_type == ModelType.Logistic_Regression:
+    if model_type == ModelType.Logistic_Regression:
         from .logistic_regression import LogisticRegression
         model = LogisticRegression(cfg)
     elif model_type == ModelType.ResNet:

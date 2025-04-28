@@ -64,5 +64,7 @@ class TrainingMetricsPlugin(PluginBase):
             "acc": round(acc, 6),
         }
 
+        ctx.workspace['train_acc'] = acc
+        
         if self.check_key(ctx.workspace, "logger"):
             ctx.workspace["logger"](str(msg))

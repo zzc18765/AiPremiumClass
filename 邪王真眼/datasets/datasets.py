@@ -16,6 +16,7 @@ class DatasetType(Enum):
     KMNIST = "kmnist"
     Olivetti_Faces = "olivetti_faces"
     NER = "ner"
+    Weather = "weather"
 
     @classmethod
     def from_str(cls, label: str) -> "DatasetType":
@@ -84,6 +85,10 @@ def get_dataset(cfg: Dict[str, Any]):
         from .corpus_p9.generator import NER
         train_dataset = NER('train', cfg)
         val_dataset = NER('val', cfg)
+    elif dataset_type == DatasetType.Weather:
+        from .weather.generator import Weather
+        dataset = Weather(cfg)
+        train_dataset, val_dataset = dataset.get_datasets()
 
     train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, drop_last=True)
     val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False)

@@ -10,9 +10,11 @@ from ._plg_save_config import PluginSaveConfig
 from ._plg_save_model import ModelSaverPlugin
 from ._plg_scheduler import PluginScheduler
 from ._plg_tiktok import PluginTikTok
+from ._plg_tensor_board import TensorBoardPlugin
 
 from ._plg_log_val_result import LogValResultPlugin
 
 
 from .plg_training_metrics import TrainingMetricsPlugin
 from .plg_val import ValEvaluationPlugin
+from .plg_val_crf import ValCRFEvaluationPlugin

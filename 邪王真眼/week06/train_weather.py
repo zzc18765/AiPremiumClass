@@ -28,7 +28,7 @@ def main():
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    writer = SummaryWriter(f'./邪王真眼/week06/runs/weather')
+    writer = SummaryWriter(f'./邪王真眼/week06/result/weather')
 
     # dataset
     dataset = WeatherStationDataset(
@@ -139,7 +139,7 @@ def main():
         model.train()
 
     # save model
-    save_path = f"./邪王真眼/week06/results/weather_{model_type}_input{input_days}_predict{label_days}_MAE_{100*best_val_mae:.4f}%_BaselineMAE_{100*baseline_mae:.4f}%.pth"
+    save_path = f"./邪王真眼/week06/result/weather/weather_{model_type}_input{input_days}_predict{label_days}_MAE_{100*best_val_mae:.4f}%_BaselineMAE_{100*baseline_mae:.4f}%.pth"
     dir_path = os.path.dirname(save_path)
     if not os.path.exists(dir_path):
         os.makedirs(dir_path)

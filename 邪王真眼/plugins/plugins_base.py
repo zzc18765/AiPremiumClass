@@ -13,6 +13,5 @@ class PluginBase(ABC):
             if warn_msg is not None:
                 print(f"{warn_msg}")
             self._warned_keys.add(key)
-            return False
-        else:
-            return True
+        
+        return key in ctx

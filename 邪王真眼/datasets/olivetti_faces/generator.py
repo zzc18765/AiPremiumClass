@@ -5,6 +5,8 @@ from typing import Any, Dict
 from torch.utils.data import Dataset
 from sklearn.datasets import fetch_olivetti_faces
 
+from models.models import ModelType
+
 
 class OlivettiFaces(Dataset):
     def __init__(self, split: str, cfg: Dict[str, Any]):
@@ -17,7 +19,14 @@ class OlivettiFaces(Dataset):
         X = faces.images  # (400, 64, 64)
         y = faces.target  # (400,)
 
-        X = torch.tensor(X, dtype=torch.float32).unsqueeze(1)  # (400, 1, 64, 64)
+        mean = X.mean()
+        std = X.std()
+        X = (X - mean) / std
+
+        if cfg.get('model') == ModelType.CNN:
+            X = torch.tensor(X, dtype=torch.float32).unsqueeze(1)  # (400, 1, 64, 64)
+        else:
+            X = torch.tensor(X, dtype=torch.float32).permute(0, 2, 1)
         y = torch.tensor(y, dtype=torch.long)
 
         train_idx = np.array([i * 10 + j for i in range(40) for j in range(7)])

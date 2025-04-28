@@ -76,13 +76,13 @@ class Trainer(plugins.PluginsItem):
 
             for batch, batch_data in enumerate(self.train_loader):
                 self.context.batch = batch
-                self.run_plugins(PluginType.BATCH_BEGIN, self.context)
-
                 batch_data = {k: v.to(self.device) for k, v in batch_data.items()}
                 label = batch_data.pop("label")
 
                 self.context.inputs = batch_data
                 self.context.labels = label
+
+                self.run_plugins(PluginType.BATCH_BEGIN, self.context)
 
                 self.optimizer.zero_grad()
                 outputs = self.model(**batch_data)
@@ -91,7 +91,7 @@ class Trainer(plugins.PluginsItem):
                     loss = outputs['loss']
                 else:
                     outputs_t = {'input': outputs['out'], **{k: v for k, v in outputs.items() if k != 'out'}}
-                    loss = self.criterion(target=label, **outputs_t)
+                    loss = self.criterion(target=self.context.labels, **outputs_t)
                 
                 self.context.loss = loss
                 loss.backward()

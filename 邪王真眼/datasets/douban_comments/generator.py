@@ -1,16 +1,16 @@
+import os
 import torch
 import pandas as pd
+import utils.cut_words as cw
 
 from typing import Any, Dict
 from torch.utils.data import Dataset
-
-import utils.cut_words as cw
 
 
 class DoubanCommentDataset(Dataset):
     def __init__(self, split: str, cfg: Dict[str, Any]):
         self.split = split
-        self.csv_file_path = cfg.get("data_root")
+        self.csv_file_path = os.path.join(cfg.get("data_root"), 'DMSC.csv')
         self.split_ratio = cfg.get("split_ratio")
         self.data_max_num = cfg.get("data_max_num")
 
