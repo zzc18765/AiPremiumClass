@@ -4,6 +4,7 @@ from .plugins_base import PluginBase
 from trainer.trainer import PluginType, TrainContext
 from models.losses.loss_functions import LossFunctionType
 
+
 class ValEvaluationPlugin(PluginBase):
     plugin_hooks = {
         PluginType.EPOCH_END: "evaluate"
@@ -14,7 +15,7 @@ class ValEvaluationPlugin(PluginBase):
     
     @staticmethod
     def _single_label_correct(logits, targets):
-        preds = logits.argmax(dim=1)
+        preds = logits.argmax(dim=-1)
         return (preds == targets).sum().item()
     
     @staticmethod
@@ -26,6 +27,7 @@ class ValEvaluationPlugin(PluginBase):
     def evaluate(self, ctx: TrainContext):
         if (ctx.epoch + 1) % 1 != 0:
             ctx.workspace['val_acc'] = None
+            ctx.workspace['val_loss'] = None
             return
 
         loss_function : LossFunctionType = ctx.cfg.get("loss_function")
@@ -44,20 +46,21 @@ class ValEvaluationPlugin(PluginBase):
         with torch.no_grad():
             for batch_data in val_loader:
                 batch_data = {k: v.to(device) for k, v in batch_data.items()}
-                labels = batch_data.pop("label")
+                label = batch_data.pop("label")
 
-                logits = model(**batch_data)['out'].squeeze(1)
-
-                if loss_function == LossFunctionType.BCE_WITH_LOGITS:
-                    loss = criterion(logits, labels)
+                outputs = model(**batch_data)
+                logits = outputs['out']
+                if 'loss' in outputs:
+                    loss = outputs['loss']
                 else:
-                    loss = criterion(logits, labels.long())
+                    outputs_t = {'input': outputs['out'], **{k: v for k, v in outputs.items() if k != 'out'}}
+                    loss = criterion(target=label, **outputs_t)
                 total_loss += loss.item()
 
                 if loss_function == LossFunctionType.BCE_WITH_LOGITS:
-                    tot_correct += self._multi_label_correct(logits, labels)
+                    tot_correct += self._multi_label_correct(logits, label)
                 else:
-                    tot_correct += self._single_label_correct(logits, labels)
+                    tot_correct += self._single_label_correct(logits, label)
         
 
         n = len(val_loader.dataset)
@@ -83,5 +86,6 @@ class ValEvaluationPlugin(PluginBase):
             ctx.workspace["logger"](str(msg))
 
         ctx.workspace['val_acc'] = acc
+        ctx.workspace['val_loss'] = val_loss
 
         model.train()

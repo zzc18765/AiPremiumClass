@@ -20,7 +20,7 @@ class TrainingMetricsPlugin(PluginBase):
     
     @staticmethod
     def _single_label_correct(logits, targets):
-        preds = logits.argmax(dim=1)
+        preds = logits.argmax(dim=-1)
         return (preds == targets).sum().item()
     
     @staticmethod
@@ -31,7 +31,7 @@ class TrainingMetricsPlugin(PluginBase):
     
     def cal_acc(self, ctx: TrainContext):
         labels = ctx.labels
-        outputs = ctx.outputs
+        outputs = ctx.outputs['out']
         loss_function : LossFunctionType = ctx.cfg.get("loss_function")
         
         if loss_function == LossFunctionType.BCE_WITH_LOGITS:
@@ -64,5 +64,7 @@ class TrainingMetricsPlugin(PluginBase):
             "acc": round(acc, 6),
         }
 
+        ctx.workspace['train_acc'] = acc
+        
         if self.check_key(ctx.workspace, "logger"):
             ctx.workspace["logger"](str(msg))

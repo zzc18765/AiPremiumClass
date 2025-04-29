@@ -1,7 +1,7 @@
 import torch
 import numpy as np
 
-from typing import List
+from typing import List, Tuple
 from gensim.models import Word2Vec
 from transformers import BertTokenizer, BertModel
 
@@ -12,9 +12,8 @@ GENSIM_WORD2VEC_WEIGHTS_PATH = './邪王真眼/models_pretrained/model.w2v'
 CORPUS_PATH = './邪王真眼/datasets/word2vec/corpus.txt'
 
 
-# embedding = 768
 class GensimVectorizer:
-    def __init__(self, use_pretrained=True, dim=768):
+    def __init__(self, use_pretrained=True, dim=512):
         if use_pretrained:
             self.model = Word2Vec.load(GENSIM_WORD2VEC_WEIGHTS_PATH)
         else:
@@ -47,12 +46,13 @@ class BERTVectorizer:
     def __init__(self):
         self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
         
-        pretrained_model_name: str = 'bert-base-chinese'
+        pretrained_model_name = 'bert-base-chinese'
         self.tokenizer = BertTokenizer.from_pretrained(pretrained_model_name)
         self.bert = BertModel.from_pretrained(pretrained_model_name)
         self.bert.to(self.device)
         self.bert.eval()
         self.vector_size = self.bert.config.hidden_size
+        self.vocab_size = self.tokenizer.vocab_size
 
     def tokenize(self, text: str) -> List[str]:
         return self.tokenizer.tokenize(text)
@@ -90,3 +90,41 @@ class BERTVectorizer:
                                texts: List[str],
                                pooling: str = 'cls') -> np.ndarray:
         return np.vstack([self.text_to_vector(t, pooling) for t in texts])
+
+    def text_to_sequence(self,
+                         text: str,
+                         max_length: int = None,
+                         padding: str = 'max_length') -> Tuple[torch.Tensor, torch.Tensor]:
+
+        inputs = self.tokenizer(
+            text,
+            padding=padding,
+            max_length=max_length,
+            truncation=True,
+            return_tensors='pt'
+        )
+        input_ids = inputs['input_ids'].to(self.device)
+        attention_mask = inputs['attention_mask'].to(self.device)
+
+        with torch.no_grad():
+            outputs = self.bert(input_ids=input_ids, attention_mask=attention_mask)
+            hidden_states = outputs.last_hidden_state
+
+        return hidden_states.squeeze(0).cpu(), attention_mask.squeeze(0).cpu()
+
+    def text_to_indices(self,
+                    text: str,
+                    max_length: int = None,
+                    padding: str = 'max_length') -> Tuple[torch.Tensor, torch.Tensor]:
+        inputs = self.tokenizer(
+            text,
+            padding=padding,
+            max_length=max_length,
+            truncation=True,
+            return_tensors='pt'
+        )
+
+        input_ids = inputs['input_ids'].squeeze(0)
+        attention_mask = inputs['attention_mask'].squeeze(0)
+
+        return input_ids, attention_mask

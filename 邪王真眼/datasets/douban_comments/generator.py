@@ -1,23 +1,20 @@
+import os
 import torch
 import pandas as pd
 
 from typing import Any, Dict
 from torch.utils.data import Dataset
 
-import utils.cut_words as cw
+from utils.tokenizer import Tokenizer
 
 
 class DoubanCommentDataset(Dataset):
     def __init__(self, split: str, cfg: Dict[str, Any]):
         self.split = split
-        self.csv_file_path = cfg.get("data_root")
+        self.csv_file_path = os.path.join(cfg.get("data_root"), 'DMSC.csv')
         self.split_ratio = cfg.get("split_ratio")
         self.data_max_num = cfg.get("data_max_num")
-
-        if cfg.get("tokenizer") == "jieba":
-            self.tokenizer = cw.JiebaTokenizer()
-        elif cfg.get("tokenizer") == "SentencePiece":
-            self.tokenizer = cw.SentencePieceTokenizer(vocab_size=cfg.get("vocab_size", 10000))
+        self.seg_type = cfg.get("seg_type")
 
         self.data = self._load_data(cfg)
         
@@ -25,8 +22,8 @@ class DoubanCommentDataset(Dataset):
             cfg.update({
                 'text_len': self.max_len,
                 'vocab_size': len(self.vocab_to_index),
-                'vocab_to_index': self.vocab_to_index,
-                'index_to_vocab': self.index_to_vocab
+                '_vocab_to_index': self.vocab_to_index,
+                '_index_to_vocab': self.index_to_vocab
             })
 
     def _load_data(self, cfg: Dict) -> pd.DataFrame:
@@ -36,21 +33,20 @@ class DoubanCommentDataset(Dataset):
 
         split_idx = int(len(data) * self.split_ratio)
         data = data.iloc[:split_idx] if self.split == "train" else data.iloc[split_idx:]
+        comments = data["Comment"].tolist()
 
         if self.split == "train":
-            seqs, self.vocab_to_index, self.index_to_vocab, self.max_len = cw.texts_to_index_sequences(
-                data["Comment"].tolist(),
-                self.tokenizer,
-                train=True
-            )
+            tokenizer = Tokenizer(comments, self.seg_type)
+            self.max_len = tokenizer.max_len
+            self.vocab_to_index = tokenizer.vocab_to_index
+            self.index_to_vocab = tokenizer.index_to_vocab
         else:
-            self.vocab_to_index = cfg["vocab_to_index"]
+            tokenizer = Tokenizer([], self.seg_type)
+            self.vocab_to_index = tokenizer.vocab_to_index = cfg["_vocab_to_index"]
+            self.index_to_vocab = tokenizer.index_to_vocab = cfg["_index_to_vocab"]
             self.max_len = cfg["text_len"]
-            seqs = cw.build_eval_sequences(
-                data["Comment"].tolist(),
-                self.tokenizer,
-                self.max_len
-            )
+
+        seqs = [tokenizer.encode(text, self.max_len) for text in comments]
 
         data["Comment"] = pd.Series(list(seqs), index=data.index)
         data.loc[:, "Star"] = (data["Star"] <= 2).astype(int)

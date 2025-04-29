@@ -23,14 +23,11 @@ class PluginsItem:
 
         self.context = context_cls(**context_kwargs)
     
-    def add_plugins(self, plugins: Union[Type[PluginBase], List[Type[PluginBase]]]):
+    def add_plugins(self, plugins: Union[Type[PluginBase], PluginBase, List[Union[Type[PluginBase], PluginBase]]]):
         if not isinstance(plugins, list):
             plugins = [plugins]
 
         for plugin_cls in plugins:
-            if not isinstance(plugin_cls, type) or not issubclass(plugin_cls, PluginBase):
-                raise TypeError(f"Expected PluginBase subclass, got: {plugin_cls}")
-            
             self.plugin_manager.register(None, plugin_cls)
 
     def run_plugins(self, plugin_point: Enum, context: Any):

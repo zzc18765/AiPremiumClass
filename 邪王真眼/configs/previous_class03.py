@@ -13,7 +13,7 @@ config = dict(
     num_layers = 2,
     vocab_size = 30522,
 
-    dataset = DatasetType.Sem_Eval,
+    dataset = DatasetType.SEM_EVAL,
     batch_size = 32,
     data_root = './邪王真眼/datasets/sem_eval',
 

@@ -28,7 +28,7 @@ class BasicBlock(nn.Module):
 class ResNet(nn.Module):
     def __init__(self, cfg: Dict[str, Any]):
         super().__init__()
-        num_classes = cfg["num_classes"]
+        num_classes = cfg.get("num_classes")
         self.conv1 = nn.Conv2d(3, 16, 3, 1, 1, bias=False)
         self.bn1 = nn.BatchNorm2d(16)
         
