@@ -33,10 +33,12 @@ class Comments_Classifier(nn.Module):
 
 if __name__ == '__main__':
     
+    mypath = 'D:/vsCodeProj/AiPremiumClass/王健钢/week7/data/'
+
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
     # 加载训练语料
-    with open('data/comments.pkl','rb') as f:
+    with open(mypath + 'comments.pkl','rb') as f:
         comments_data = pickle.load(f)
 
     # 构建词汇表
@@ -101,9 +103,9 @@ if __name__ == '__main__':
                 print(f'Epoch [{epoch+1}/{num_epochs}], Step [{i+1}/{len(dataloader)}], Loss: {loss.item():.4f}')
 
     # 保存模型
-    torch.save(model.state_dict(), 'comments_classifier.pth')
+    torch.save(model.state_dict(), mypath + 'comments_classifier.pth')
     # 模型词典
-    torch.save(vocab, 'comments_vocab.pth')
+    torch.save(vocab, mypath + 'comments_vocab.pth')
 
     """"""""""""""""""""""""""""""""""""""""""""""""""
 
@@ -112,7 +114,7 @@ if __name__ == '__main__':
     num_classes = 2
 
     # 加载词典
-    vocab = torch.load('comments_vocab.pth')
+    vocab = torch.load(mypath + 'comments_vocab.pth')
     # 测试模型
     comment1 = '这部电影真好看！全程无尿点'
     comment2 = '看到一半就不想看了，太无聊了，演员演技也很差'
@@ -126,7 +128,7 @@ if __name__ == '__main__':
 
     # 加载模型
     model = Comments_Classifier(len(vocab), embedding_dim, hidden_size, num_classes)
-    model.load_state_dict(torch.load('comments_classifier.pth'))
+    model.load_state_dict(torch.load(mypath + 'comments_classifier.pth'))
     model.to(device)
 
     # 模型推理
