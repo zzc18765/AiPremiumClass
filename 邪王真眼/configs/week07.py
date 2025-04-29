@@ -2,7 +2,7 @@ from datasets.datasets import DatasetType
 from models.losses.loss_functions import LossFunctionType
 from models.optimizers.optimizers import OptimizerType
 from models.models import ModelType
-
+from utils.tokenizer import SegmenterType
 
 config = dict(
     model = ModelType.RNN,
@@ -16,9 +16,8 @@ config = dict(
     dataset = DatasetType.DOUBAN_COMMENTS,
     split_ratio = 0.7,
     batch_size = 512,
-    data_max_num = 50000,
-    # tokenizer = 'jieba',
-    tokenizer = 'SentencePiece',
+    data_max_num = 5000,
+    seg_type = SegmenterType.SENTENCE_PIECE,
     data_root = './邪王真眼/datasets/douban_comments',
 
     optimizer = OptimizerType.SGD,
