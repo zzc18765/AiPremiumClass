@@ -2,6 +2,7 @@ import math
 import unicodedata
 
 from collections import Counter
+from scipy.sparse import csr_matrix
 from typing import Dict, List, Tuple, Optional
 
 from utils.jieba_segmenter import JiebaSegmenter
@@ -83,32 +84,27 @@ class BM25Calculator:
         stopwords: Optional[List[str]] = None,
         k1: float = 1.5,
         b: float = 0.75,
-        doc_term_freq: Optional[Dict[str, Dict[str, int]]] = None,
-        doc_lengths: Optional[Dict[str, int]] = None,
-        avgdl: Optional[float] = None,
-        idf: Optional[Dict[str, float]] = None
-    ) -> Tuple[Dict[str, Dict[str, float]], List[str]]:
+    ) -> Tuple[csr_matrix, List[str], List[str]]:
         doc_terms, all_terms = BM25Calculator.tokenize_documents(documents, stopwords)
+        doc_lengths, avgdl = BM25Calculator.compute_document_stats(doc_terms)
+        doc_term_freq = BM25Calculator.compute_term_frequencies(doc_terms)
+        idf = BM25Calculator.compute_idf(doc_term_freq, len(documents))
+            
+        unique_terms = list({term:1 for term in all_terms}.keys())
+        vocab = {term:i for i, term in enumerate(unique_terms)}
         
-        if doc_lengths is None or avgdl is None:
-            doc_lengths, avgdl = BM25Calculator.compute_document_stats(doc_terms)
-            
-        if doc_term_freq is None:
-            doc_term_freq = BM25Calculator.compute_term_frequencies(doc_terms)
-            
-        if idf is None:
-            idf = BM25Calculator.compute_idf(doc_term_freq, len(documents))
-            
-        bm25_scores = {}
-        
-        for doc_name, term_freq in doc_term_freq.items():
-            bm25_scores[doc_name] = {}
+        rows, cols, data = [], [], []
+        for doc_idx, (doc_name, term_freq) in enumerate(doc_term_freq.items()):
             doc_len = doc_lengths[doc_name]
-            
             for term, tf in term_freq.items():
-                numerator = tf * (k1 + 1)
-                denominator = tf + k1 * (1 - b + b * (doc_len / avgdl))
-                bm25_scores[doc_name][term] = idf.get(term, 0.0) * (numerator / denominator)
-                
-        unique_terms = list(set(all_terms))
-        return bm25_scores, unique_terms
+                if term in vocab:
+                    numerator = tf * (k1 + 1)
+                    denominator = tf + k1 * (1 - b + b * (doc_len / avgdl))
+                    score = idf.get(term, 0.0) * (numerator / denominator)
+                    
+                    rows.append(doc_idx)
+                    cols.append(vocab[term])
+                    data.append(score)
+        
+        shape = (len(doc_term_freq), len(vocab))
+        return csr_matrix((data, (rows, cols)), shape=shape), list(doc_term_freq.keys()), unique_terms

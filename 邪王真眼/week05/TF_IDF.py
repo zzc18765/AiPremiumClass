@@ -2,12 +2,9 @@ import os
 import sys
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 import random
-import numpy as np
-
-from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.metrics.pairwise import cosine_similarity
 
 from utils.tfidf_calculator import TFIDFCalculator
+from sklearn.metrics.pairwise import cosine_similarity
 
 
 def load_stopwords(file_path):
@@ -24,9 +21,6 @@ def load_and_preprocess_comments(file_path):
         for i, line in enumerate(lines):
             if i == 0:
                 continue
-            
-            if i == 50000:
-                break
 
             terms = line.split("\t")
             if len(terms) >= 6:
@@ -44,39 +38,12 @@ def load_and_preprocess_comments(file_path):
     return comments
 
 
-def get_book_tfidf_vector(tfidf, book_name, all_terms):
-    vector = []
-    for term in all_terms:
-        vector.append(tfidf.get(book_name, {}).get(term, 0))
-    return np.array(vector)
-
-
-def my_cosine_similarity(vec1, vec2):
-    norm_vec1 = np.linalg.norm(vec1)
-    norm_vec2 = np.linalg.norm(vec2)
-    
-    if norm_vec1 == 0 or norm_vec2 == 0:
-        return 0.0
-    
-    vec1_normalized = vec1 / norm_vec1
-    vec2_normalized = vec2 / norm_vec2
-    
-    return np.dot(vec1_normalized, vec2_normalized)
-
-
-def get_most_similar_books(tfidf, all_terms, selected_book, top_n=5):
-    book_names = list(tfidf.keys())
-    selected_vector = get_book_tfidf_vector(tfidf, selected_book, all_terms)
-    
-    similarities = []
-    for book in book_names:
-        if book != selected_book:
-            book_vector = get_book_tfidf_vector(tfidf, book, all_terms)
-            similarity = my_cosine_similarity(selected_vector, book_vector)
-            similarities.append((book, similarity))
-
-    similarities.sort(key=lambda x: x[1], reverse=True)
-    return similarities[:top_n]
+def get_most_similar_books(tfidf_matrix, book_names, selected_book, top_n=5):
+    selected_idx = book_names.index(selected_book)
+    similarities = cosine_similarity(tfidf_matrix[selected_idx], tfidf_matrix).flatten()
+    similarities[selected_idx] = -1
+    top_indices = similarities.argsort()[-top_n:][::-1]
+    return [(book_names[i], similarities[i]) for i in top_indices]
 
 
 def main():
@@ -91,10 +58,10 @@ def main():
     selected_book = '盗墓笔记'
     print(f"Selected Book: {selected_book}")
 
-    manual = False
+    manual = True
 
     if manual == True:
-        tfidf, all_terms = TFIDFCalculator.compute_tfidf(comments, stopwords)
+        tfidf, all_terms, _ = TFIDFCalculator.compute_tfidf(comments, stopwords)
 
         similar_books = get_most_similar_books(tfidf, all_terms, selected_book, top_n=5)
 
@@ -103,9 +70,8 @@ def main():
             print(f"Book: {book}, Similarity: {similarity:.4f}")
     
     else:
-        vec = TfidfVectorizer(stop_words=list(stopwords))
-        tokenized_comments = [' '.join(TFIDFCalculator.tokenize_documents(' '.join(comms), stopwords)) for comms in comments.values()]
-        tfidf = vec.fit_transform(tokenized_comments)
+        tfidf, all_terms, _ = TFIDFCalculator.compute_tfidf_by_sklearn(comments, stopwords)
+
         similar = cosine_similarity(tfidf)
 
         selected_book_index = list(comments.keys()).index(selected_book)

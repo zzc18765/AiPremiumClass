@@ -1,10 +1,13 @@
+import os
+import sys
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 import re
 import json
 
 from typing import List, Dict, Optional, Tuple
 
-from .jieba_segmenter import JiebaSegmenter
-from .tfidf_calculator import TFIDFCalculator
+from utils.jieba_segmenter import JiebaSegmenter
+from utils.tfidf_calculator import TFIDFCalculator
 
 
 class TfidfSummarizer:
@@ -12,15 +15,27 @@ class TfidfSummarizer:
         with open(file_path, encoding="utf8") as f:
             documents = json.load(f)
 
-        corpus: List[str] = []
+        corpus = {}
         for doc in documents:
             title = doc["title"].replace("\n", " ")
             content = doc["content"].replace("\n", " ")
-            corpus.append(f"{title}\n{content}")
+            corpus[title] = [content]
 
-        tf_idf_dict, _ = TFIDFCalculator.compute_tfidf(corpus)
+        tfidf_matrix, book_names, feature_names  = TFIDFCalculator.compute_tfidf_by_sklearn(corpus)
 
-        return tf_idf_dict, corpus
+        tfidf_dicts = []
+        for row in tfidf_matrix:
+            row_dict = {
+                feature_names[i]: row[0, i]
+                for i in row.nonzero()[1]
+            }
+            tfidf_dicts.append(row_dict)
+
+        indexed_corpus = {
+            idx: (title, corpus[title][0]) for idx, title in enumerate(book_names)
+        }
+
+        return tfidf_dicts, indexed_corpus
 
     @staticmethod
     def generate_document_abstract(
@@ -47,11 +62,11 @@ class TfidfSummarizer:
         json_path: str,
         top: int = 3
     ) -> List[Dict[str, str]]:
-        tf_idf_dict, corpus = self.load_data(json_path)
+        tfidf_list, corpus = self.load_data(json_path)
         results: List[Dict[str, str]] = []
 
-        for doc_idx, tfidf in tf_idf_dict.items():
-            title, content = corpus[doc_idx].split("\n", 1)
+        for doc_idx, tfidf in enumerate(tfidf_list):
+            title, content = corpus[doc_idx]
             abstract = self.generate_document_abstract(tfidf, content, top=top)
             if abstract:
                 results.append({
