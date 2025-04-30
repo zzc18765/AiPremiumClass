@@ -10,7 +10,7 @@ config = dict(
     input_channels = 1,
     hidden_channels = 128,
 
-    dataset = DatasetType.Olivetti_Faces,
+    dataset = DatasetType.OLIVETTI_FACES,
     batch_size = 4,
     data_root = './邪王真眼/datasets/olivetti_faces',
 

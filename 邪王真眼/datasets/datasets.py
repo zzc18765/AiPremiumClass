@@ -14,9 +14,10 @@ class DatasetType(Enum):
     E_Commerce_Comments_Idx = "e_commerce_comments_idx"
     BREAST_CANCER = "breast_cancer"
     KMNIST = "kmnist"
-    Olivetti_Faces = "olivetti_faces"
+    OLIVETTI_FACES = "olivetti_faces"
     NER = "ner"
     Weather = "weather"
+    COUPLET = "couplet"
 
     @classmethod
     def from_str(cls, label: str) -> "DatasetType":
@@ -36,6 +37,7 @@ def get_dataset(cfg: Dict[str, Any]):
     if isinstance(dataset_type, str):
         dataset_type = DatasetType.from_str(dataset_type)
     batch_size = cfg.get('batch_size')
+    collate_fn = None
 
     if dataset_type == DatasetType.DOUBAN_COMMENTS:
         from .douban_comments.generator import DoubanCommentDataset
@@ -77,7 +79,7 @@ def get_dataset(cfg: Dict[str, Any]):
         from .kmnist.generator import KMNIST
         train_dataset = KMNIST('train', cfg)
         val_dataset = KMNIST('val', cfg)
-    elif dataset_type == DatasetType.Olivetti_Faces:
+    elif dataset_type == DatasetType.OLIVETTI_FACES:
         from .olivetti_faces.generator import OlivettiFaces
         train_dataset = OlivettiFaces('train', cfg)
         val_dataset = OlivettiFaces('val', cfg)
@@ -89,7 +91,12 @@ def get_dataset(cfg: Dict[str, Any]):
         from .weather.generator import Weather
         dataset = Weather(cfg)
         train_dataset, val_dataset = dataset.get_datasets()
-
-    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, drop_last=True)
-    val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False)
+    elif dataset_type == DatasetType.COUPLET:
+        from .couplet.generator import Couplet
+        train_dataset = Couplet('train', cfg)
+        val_dataset = Couplet('val', cfg)
+        collate_fn = Couplet.collate_fn
+    
+    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, collate_fn=collate_fn, drop_last=True)
+    val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False, collate_fn=collate_fn)
     return train_loader, val_loader
