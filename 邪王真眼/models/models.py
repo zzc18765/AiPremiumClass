@@ -13,6 +13,7 @@ class ModelType(Enum):
     SkipGram = 'skip_gram'
     CNN = 'cnn'
     BertClassifier = 'bert_classifier'
+    SIMPLE_ATTENTION = 'simple_attention'
 
     @classmethod
     def from_str(cls, label: str) -> "ModelType":
@@ -54,6 +55,9 @@ def get_model(cfg: Dict[str, Any]):
     elif model_type == ModelType.BertClassifier:
         from .bert_classifier import BertClassifier
         model = BertClassifier(cfg)
+    elif model_type == ModelType.SIMPLE_ATTENTION:
+        from .simple_attention import SimpleAttention
+        model = SimpleAttention(cfg)
     
     if torch.cuda.device_count() > 1:
         model = nn.DataParallel(model)

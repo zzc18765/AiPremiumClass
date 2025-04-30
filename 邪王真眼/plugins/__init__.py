@@ -18,3 +18,5 @@ from ._plg_log_val_result import LogValResultPlugin
 from .plg_training_metrics import TrainingMetricsPlugin
 from .plg_val import ValEvaluationPlugin
 from .plg_val_crf import ValCRFEvaluationPlugin
+from .plg_training_metrics_seq2seq import TrainingMetricsSeq2SeqPlugin
+from .plg_val_seq2seq import ValEvaluationSeq2SeqPlugin

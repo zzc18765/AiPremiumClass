@@ -13,7 +13,7 @@ config = dict(
     num_layers = 3,
     dropout = 0.3,
 
-    dataset = DatasetType.Olivetti_Faces,
+    dataset = DatasetType.OLIVETTI_FACES,
     batch_size = 4,
     data_root = './邪王真眼/datasets/olivetti_faces',
 
