@@ -230,7 +230,7 @@ def main():
     optimizer = optim.Adam(model.parameters(), lr=1e-3)
     criterion = nn.CrossEntropyLoss(ignore_index=0)  # 忽略<pad>
 
-    num_epochs = 200
+    num_epochs = 20
     for epoch in range(num_epochs):
         loss = train(model, data_loader, optimizer, criterion, device)
         print(f"Epoch {epoch + 1}/{num_epochs}, Loss: {loss:.4f}")

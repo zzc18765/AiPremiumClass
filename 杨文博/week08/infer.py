@@ -30,6 +30,7 @@ def load_model_and_vocab(model_path, vocab_path, config):
 def predict(model, vocab, device, input_sentence, max_len=50):
     """模型推理函数"""
     # 将输入句子转换为索引序列
+    model.eval()
     input_indices = [[vocab.word2idx.get(char, vocab.word2idx['<unk>'])
                       for char in input_sentence]]
 
@@ -40,8 +41,7 @@ def predict(model, vocab, device, input_sentence, max_len=50):
         # 编码器前向传播
         encoder_state, enc_outputs = model.encoder(input_tensor)
 
-        # 调整hidden形状为[num_layers, batch, hidden_dim]
-        hidden = encoder_state # [1, batch, hidden_dim*2]
+        hidden_state = encoder_state# batch, hidden_dim*2]
 
         # 初始化解码器输入（<bos>）
         decoder_input = torch.tensor([[vocab.word2idx['<bos>']]], device=device)
@@ -51,10 +51,12 @@ def predict(model, vocab, device, input_sentence, max_len=50):
 
         for _ in range(max_len):
             # 解码器前向传播
-            output, hidden = model.decoder(decoder_input, hidden, enc_outputs)
+            output, hidden_state = model.decoder(decoder_input, hidden_state, enc_outputs)
+
+            hidden_state = hidden_state.squeeze(0)
 
             # 获取预测的下一个字符
-            topi = output.argmax(-1)[:, -1]  # 取最后一个时间步
+            topi = output.argmax(dim=-1)  # 取最后一个时间步
             decoded_char = vocab.idx2word[topi.item()]
 
             # 遇到<eos>则停止
@@ -64,7 +66,7 @@ def predict(model, vocab, device, input_sentence, max_len=50):
             decoded_chars.append(decoded_char)
 
             # 下一个解码器输入是当前预测的字符
-            decoder_input = topi.unsqueeze(0).unsqueeze(0)  # [1, 1]
+            decoder_input = topi
 
     return ''.join(decoded_chars)
 
@@ -91,7 +93,7 @@ if __name__ == '__main__':
             break
 
         # 生成下联
-        lower_couplet = predict(model, vocab, device, upper_couplet)
+        lower_couplet = predict(model, vocab, device, upper_couplet,max_len=len(upper_couplet))
         print(f"上联: {upper_couplet}")
         print(f"下联: {lower_couplet}")
         print("-" * 50)
