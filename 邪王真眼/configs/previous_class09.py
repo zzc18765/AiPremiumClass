@@ -4,7 +4,7 @@ from models.models import ModelType
 
 
 config = dict(
-    model = ModelType.BertClassifier,
+    model = ModelType.BERTCLASSIFIER,
     input_size = 128,
     hidden_size = 256,
     num_layers = 3,
