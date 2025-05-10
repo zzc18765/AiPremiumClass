@@ -282,8 +282,8 @@ if __name__ == '__main__':
     input_lang_inf, output_lang_inf, _, _ = prepare_data(
         '/Users/chenxing/AI/AiPremiumClass/陈兴/week08/data/couplet/train/in.txt',
         '/Users/chenxing/AI/AiPremiumClass/陈兴/week08/data/couplet/train/out.txt',
-        '/Users/chenxing/AI/AiPremiumClass/陈兴/week08/data/couplet/test/in.txt',  # Ensure val data is used for vocab consistency
-        '/Users/chenxing/AI/AiPremiumClass/陈兴/week08/data/couplet/test/out.txt' # Ensure val data is used for vocab consistency
+        '/Users/chenxing/AI/AiPremiumClass/陈兴/week08/data/couplet/test/in.txt', 
+        '/Users/chenxing/AI/AiPremiumClass/陈兴/week08/data/couplet/test/out.txt'
     )
 
     # 加载最后一次保存的模型
