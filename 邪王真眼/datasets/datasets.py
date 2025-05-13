@@ -19,6 +19,7 @@ class DatasetType(Enum):
     Weather = "weather"
     COUPLET = "couplet"
     NextWordPrediction = "NextWordPrediction"
+    QA = "qa"
 
     @classmethod
     def from_str(cls, label: str) -> "DatasetType":
@@ -101,6 +102,10 @@ def get_dataset(cfg: Dict[str, Any]):
         from .corpus_p10.generator import NextWordPrediction
         train_dataset = NextWordPrediction('train', cfg)
         val_dataset = NextWordPrediction('val', cfg)
+    elif dataset_type == DatasetType.QA:
+        from .corpus_p11.generator import QA
+        train_dataset = QA('train', cfg)
+        val_dataset = QA('val', cfg)
     
     train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, collate_fn=collate_fn, drop_last=True)
     val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False, collate_fn=collate_fn)
