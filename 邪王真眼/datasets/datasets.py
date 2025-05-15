@@ -20,6 +20,7 @@ class DatasetType(Enum):
     COUPLET = "couplet"
     NextWordPrediction = "NextWordPrediction"
     QA = "qa"
+    QA_ENCODER_DECODER = "qa_encoder_decoder"
 
     @classmethod
     def from_str(cls, label: str) -> "DatasetType":
@@ -104,6 +105,10 @@ def get_dataset(cfg: Dict[str, Any]):
         val_dataset = NextWordPrediction('val', cfg)
     elif dataset_type == DatasetType.QA:
         from .corpus_p11.generator import QA
+        train_dataset = QA('train', cfg)
+        val_dataset = QA('val', cfg)
+    elif dataset_type == DatasetType.QA_ENCODER_DECODER:
+        from .corpus_p11.generator_en_de import QA
         train_dataset = QA('train', cfg)
         val_dataset = QA('val', cfg)
     
