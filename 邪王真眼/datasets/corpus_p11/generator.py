@@ -53,7 +53,7 @@ class QA(Dataset):
                 item["content"],
                 add_special_tokens=False,
                 truncation=True,
-                max_length=self.max_length - len(q_tokens) - 2
+                max_length=self.max_length - len(q_tokens) - 1
             )
             
             input_ids = q_tokens + [self.cls_token_id] + a_tokens[:-1]
