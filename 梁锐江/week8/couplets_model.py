@@ -52,7 +52,7 @@ class CoupletsAttentionModel(nn.Module):
 
         # a_t.transpose(1,2) shape [batch_size, tgt_len, src_len]
         c_t = torch.bmm(a_t, enc_outputs)
-        # c_t shape [batch_size, src_len, hidden_dim * 2]
+        # c_t shape [batch_size, tgt_len, hidden_dim * 2]
         return c_t
 
 
