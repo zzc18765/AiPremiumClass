@@ -21,6 +21,7 @@ class DatasetType(Enum):
     NextWordPrediction = "NextWordPrediction"
     QA = "qa"
     QA_ENCODER_DECODER = "qa_encoder_decoder"
+    JD_COMMENTS = "jd_comments"
 
     @classmethod
     def from_str(cls, label: str) -> "DatasetType":
@@ -111,6 +112,10 @@ def get_dataset(cfg: Dict[str, Any]):
         from .corpus_p11.generator_en_de import QA
         train_dataset = QA('train', cfg)
         val_dataset = QA('val', cfg)
+    elif dataset_type == DatasetType.JD_COMMENTS:
+        from .jd_comments.generator import JDComments
+        train_dataset = JDComments('train', cfg)
+        val_dataset = JDComments('val', cfg)
     
     train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, collate_fn=collate_fn, drop_last=True)
     val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False, collate_fn=collate_fn)

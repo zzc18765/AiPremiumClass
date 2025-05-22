@@ -5,7 +5,7 @@ from models.losses.loss_functions import LossFunctionType
 
 
 config = dict(
-    model = ModelType.BERTPREDICTOR,
+    model = ModelType.BERT_PREDICTOR,
     num_layers = 6,
     dropout = 0.1,
 

@@ -5,7 +5,7 @@ from models.optimizers.optimizers import OptimizerType
 
 
 config = dict(
-    model = ModelType.BERTCLASSIFIER,
+    model = ModelType.BERT_CLASSIFIER_CRF,
     input_size = 128,
     hidden_size = 256,
     num_layers = 3,
