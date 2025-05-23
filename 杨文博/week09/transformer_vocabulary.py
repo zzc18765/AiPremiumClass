@@ -5,11 +5,9 @@ class Config:
     upper_file_path = './in.txt'
     lower_file_path = './out.txt'
     batch_size = 256
-    emb_dim = 100
-    hidden_dim = 120
     dropout = 0.5
     max_seq_len = 64
-    embedding_dim = 256
+    embedding_dim = 100
     num_heads = 4
     num_layers = 2
     epoches = 20

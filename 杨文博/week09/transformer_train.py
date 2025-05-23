@@ -69,7 +69,7 @@ def train(model: nn.Module,
             # output: [batch_size, seq_len, vocab_size]
             output = model(enc_input, dec_input,
                            tgt_mask=tgt_mask,
-                           src_key_padding_mask=src_key_padding_mask)  # [batch_size, seq_len, vocab_size]
+                           enc_padding_mask=src_key_padding_mask)  # [batch_size, seq_len, vocab_size]
 
             # Flatten for loss computation
             output = output.view(-1, output.size(-1))  # [batch_size * seq_len, vocab_size]
@@ -95,11 +95,14 @@ def main():
         vocab = pickle.load(f)
     data_set = prepare4dataloader(vocab)
     data_loader = DataLoader(data_set, batch_size=Config.batch_size, shuffle=True, collate_fn=collate_fn)
-    model = PoetryTransformer(len(vocab.word2idx), Config.embedding_dim, Config.num_heads, Config.num_layers,
+    model = PoetryTransformer(len(vocab.word2idx), len(vocab.word2idx), Config.embedding_dim, Config.num_heads,
+                              Config.num_layers, Config.num_layers,
                               Config.dropout, Config.max_seq_len).to(device)
     optimizer = optim.Adam(model.parameters(), lr=Config.learning_rate)
     criterion = nn.CrossEntropyLoss()
     train(model, device, data_loader, optimizer, criterion, Config.epoches)
+    torch.save(model.state_dict(), 'couplet_transformer.pt')
+    print("模型训练完成并保存！")
 
 if __name__ == '__main__':
     main()
