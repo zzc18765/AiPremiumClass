@@ -66,11 +66,11 @@ class Seq2SeqTransformer(nn.Module):
 
     # 推理环节使用方法
     def encode(self, enc_inp):
-        enc_emb = self.pos_encoding(self.enc_emb(enc_inp))
+        enc_emb = self.positional(self.src_embedding(enc_inp))
         return self.transformer.encoder(enc_emb)
 
     def decode(self, dec_inp, memory, dec_mask):
-        dec_emb = self.pos_encoding(self.dec_emb(dec_inp))
+        dec_emb = self.positional(self.tgt_embedding(dec_inp))
         return self.transformer.decoder(dec_emb, memory, dec_mask)
 
 
