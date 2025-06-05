@@ -37,16 +37,23 @@ def data_process(batch):
 
 
 def compute_metric(result):
-    seqeval = evaluate.load('seqeval')
+    metric = evaluate.load('seqeval')
     predicts, labels = result
-    predicts = np.argmax(predicts, axis=2)
+    if predicts.ndim == 3:
+        predicts = np.argmax(predicts, axis=2)
     
-    predicts = [[id2label[p] for p,l in zip(ps,ls) if l != -100]
-                 for ps,ls in zip(predicts,labels)]
-    labels = [[id2label[l] for p,l in zip(ps,ls) if l != -100]
-                 for ps,ls in zip(predicts,labels)]
-    results = seqeval.compute(predictions=predicts, references=labels)
-    return results
+    true_preds = []
+    true_labels = []
+    
+    for pred_seq, lab_seq in zip(predicts, labels):
+        active_indices = lab_seq != -100
+        active_preds = pred_seq[active_indices].tolist()
+        active_labs = lab_seq[active_indices].tolist()
+        
+        true_preds.append([id2label[str(p)] for p in active_preds])
+        true_labels.append([id2label[str(l)] for l in active_labs])
+    
+    return metric.compute(predictions=true_preds, references=true_labels)
 
 
 if __name__ == "__main__":
@@ -58,6 +65,7 @@ if __name__ == "__main__":
 
     # dataset
     ds = load_dataset("doushabao4766/msra_ner_k_V3")
+    # ds['train'] = ds['train'].select(range(10000))
     
     label_names = ds['train'].features['ner_tags'].feature.names
     id2label = {str(i): name for i, name in enumerate(label_names)}
@@ -77,8 +85,8 @@ if __name__ == "__main__":
         output_dir=output_dir,
         num_train_epochs = 3,
         save_safetensors=False,
-        per_device_train_batch_size=16,
-        per_device_eval_batch_size=16,
+        per_device_train_batch_size=8,
+        per_device_eval_batch_size=8,
         report_to='tensorboard',
         eval_strategy="epoch",
     )
