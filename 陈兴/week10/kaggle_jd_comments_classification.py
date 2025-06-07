@@ -46,8 +46,18 @@ class JDCommentDataset(Dataset):
     def __len__(self):
         return len(self.texts)
     
+    # 在JDCommentDataset类中添加文本预处理
+    def preprocess_text(self, text):
+        # 基本清洗
+        text = text.strip()
+        # 移除多余空格
+        text = ' '.join(text.split())
+        return text
+    
     def __getitem__(self, idx):
         text = str(self.texts[idx])
+        # 应用预处理
+        text = self.preprocess_text(text)
         label = self.labels[idx]
         
         encoding = self.tokenizer(text, 
@@ -68,8 +78,14 @@ class BERTClassifier(nn.Module):
     def __init__(self, bert_model, num_classes, freeze_bert=False):
         super(BERTClassifier, self).__init__()
         self.bert = bert_model
-        self.dropout = nn.Dropout(0.1)
-        self.fc = nn.Linear(768, num_classes)
+        self.dropout = nn.Dropout(0.3)  # 增加dropout率
+        # 添加更复杂的分类头
+        self.classifier = nn.Sequential(
+            nn.Linear(768, 384),
+            nn.ReLU(),
+            nn.Dropout(0.3),
+            nn.Linear(384, num_classes)
+        )
         
         # 冻结BERT参数
         if freeze_bert:
@@ -77,10 +93,12 @@ class BERTClassifier(nn.Module):
                 param.requires_grad = False
                 
     def forward(self, input_ids, attention_mask):
+        # 获取BERT的最后一层隐藏状态，而不是只用pooler_output
         outputs = self.bert(input_ids=input_ids, attention_mask=attention_mask)
-        pooled_output = outputs.pooler_output
-        x = self.dropout(pooled_output)
-        logits = self.fc(x)
+        # 使用[CLS]标记的最后隐藏状态
+        last_hidden_state = outputs.last_hidden_state[:, 0, :]
+        x = self.dropout(last_hidden_state)
+        logits = self.classifier(x)
         return logits
 
 # 训练函数
@@ -193,6 +211,10 @@ def evaluate_model(model, test_loader):
 # 预测函数
 def predict(text, model, tokenizer, max_length=128):
     model.eval()
+    # 预处理文本
+    text = text.strip()
+    text = ' '.join(text.split())
+    
     encoding = tokenizer(text, 
                          add_special_tokens=True,
                          max_length=max_length,
@@ -205,9 +227,54 @@ def predict(text, model, tokenizer, max_length=128):
     
     with torch.no_grad():
         outputs = model(input_ids=input_ids, attention_mask=attention_mask)
-        _, preds = torch.max(outputs, 1)
+        probabilities = torch.softmax(outputs, dim=1)
+        confidence, preds = torch.max(probabilities, 1)
     
-    return preds.item()
+    # 返回预测标签和置信度
+    return preds.item(), confidence.item()
+
+# 在文件顶部添加计算类权重的函数
+def calculate_class_weights(labels):
+    class_counts = np.bincount(labels)
+    total = len(labels)
+    weights = total / (len(class_counts) * class_counts)
+    return torch.FloatTensor(weights)
+
+# 加载本地模型并进行预测的函数
+def load_model_and_predict(model_path, sample_texts):
+    print(f"\n加载本地模型 {model_path} 进行预测...")
+    
+    # 加载tokenizer
+    tokenizer = BertTokenizer.from_pretrained('bert-base-chinese')
+     
+    # 加载保存的模型信息 - 设置weights_only=False解决PyTorch 2.6的兼容性问题
+    checkpoint = torch.load(model_path, map_location=device, weights_only=False)
+    num_classes = checkpoint['num_classes']
+    model_type = checkpoint['model_type']
+    accuracy = checkpoint['accuracy']
+    
+    # 初始化BERT模型
+    bert_model = BertModel.from_pretrained('bert-base-chinese')
+    
+    # 创建分类器模型实例
+    model = BERTClassifier(
+        bert_model, 
+        num_classes, 
+        freeze_bert=(model_type == "冻结BERT")
+    ).to(device)
+    
+    # 加载模型状态
+    model.load_state_dict(checkpoint['model_state_dict'])
+    
+    print(f"模型类型: {model_type}")
+    print(f"模型准确率: {accuracy:.4f}")
+    
+    # 进行预测
+    print("\n示例预测:")
+    for text in sample_texts:
+        pred, confidence = predict(text, model, tokenizer)
+        sentiment = ["负面", "中性", "正面"][pred]  # 现在pred是整数
+        print(f"文本: {text}\n预测标签: {pred} ({sentiment}), 置信度: {confidence:.4f}")
 
 # 主函数
 def main():
@@ -241,7 +308,7 @@ def main():
             rating = float(rating)
             if rating <= 2:
                 return 0  # 负面
-            elif rating == 3:
+            elif rating < 4:  # 修改为3分到4分之间为中性
                 return 1  # 中性
             else:
                 return 2  # 正面
@@ -266,6 +333,10 @@ def main():
     print(f"验证集大小: {len(val_texts)}")
     print(f"测试集大小: {len(test_texts)}")
     
+    # 计算类别权重 - 移到这里，确保train_labels已定义
+    class_weights = calculate_class_weights(train_labels)
+    class_weights = class_weights.to(device)
+    
     # 加载tokenizer和预训练模型
     print("加载BERT模型和tokenizer...")
     tokenizer = BertTokenizer.from_pretrained('bert-base-chinese')
@@ -286,15 +357,16 @@ def main():
     
     # 训练参数
     num_classes = len(set(labels))
-    num_epochs = 2
-    learning_rate = 2e-5
+    num_epochs = 2  # 增加训练轮数
+    learning_rate = 3e-5  # 微调学习率
+    weight_decay = 0.01  # 添加权重衰减
     
     # 创建并训练冻结BERT的模型
     print("\n训练冻结BERT的模型...")
     frozen_model = BERTClassifier(bert_model, num_classes, freeze_bert=True).to(device)
-    frozen_optimizer = optim.AdamW(frozen_model.parameters(), lr=learning_rate)
+    frozen_optimizer = optim.AdamW(frozen_model.parameters(), lr=learning_rate, weight_decay=weight_decay)
     frozen_scheduler = optim.lr_scheduler.StepLR(frozen_optimizer, step_size=1, gamma=0.9)
-    criterion = nn.CrossEntropyLoss()
+    criterion = nn.CrossEntropyLoss(weight=class_weights)  # 使用加权损失函数
     
     frozen_best_acc = train_model(
         frozen_model, train_loader, val_loader, frozen_optimizer, criterion, 
@@ -348,14 +420,24 @@ def main():
         "一般般吧，没有想象中那么好"
     ]
     
-    print("\n示例预测:")
+    # 使用训练好的模型直接预测
+    print("\n使用当前训练的模型进行预测:")
     for text in sample_texts:
-        pred = predict(text, best_model, tokenizer)
-        sentiment = ["负面", "中性", "正面"][pred]
-        print(f"文本: {text}\n预测标签: {pred} ({sentiment})")
+        pred, confidence = predict(text, best_model, tokenizer)  # 正确解包返回值
+        sentiment = ["负面", "中性", "正面"][pred]  # 现在pred是整数
+        print(f"文本: {text}\n预测标签: {pred} ({sentiment}), 置信度: {confidence:.4f}")
+    
+    # 加载本地模型进行预测
+    load_model_and_predict(final_model_path, sample_texts)
     
     # 关闭TensorBoard writer
     writer.close()
 
 if __name__ == "__main__":
-    main()
+    # main()
+    sample_texts = [
+        "这个产品质量很好，我很满意",
+        "太差了，完全不值这个价格",
+        "一般般吧，没有想象中那么好"
+    ]
+    load_model_and_predict('/Users/chenxing/Downloads/frozen_bert_best.pt', sample_texts)
