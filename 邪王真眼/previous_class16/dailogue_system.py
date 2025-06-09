@@ -106,12 +106,15 @@ class DialogSystem:
         #对话策略，根据当前状态选择下一步动作
         #如果槽位有欠缺，反问槽位
         #如果没有欠缺，直接回答
-        if memory["need_slot"] is None:
+        if self.node_id_to_node_info[memory["hit_intent"]].get("action", []) == "repeat":
+            memory['hit_intent'] = memory['last_hit_intent']
+            pass
+        elif memory["need_slot"] is None:
             memory["action"] = "answer"
             #开放子节点
             memory["available_nodes"] = self.node_id_to_node_info[memory["hit_intent"]].get("childnode", [])
             #执行动作
-            self.take_action(memory)
+            # self.take_action(memory)
         else:
             memory["action"] = "ask"
             #停留在当前节点
