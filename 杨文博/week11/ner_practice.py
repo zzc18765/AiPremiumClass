@@ -1,168 +1,102 @@
+from transformers import AutoModelForTokenClassification,AutoTokenizer
 import torch
+from transformers import TrainingArguments,Trainer
 import numpy as np
-from transformers import AutoModelForTokenClassification, AutoTokenizer, DataCollatorForTokenClassification
-from transformers import TrainingArguments, Trainer
-import evaluate
 from datasets import load_dataset
 
-# 1. 初始化模型和tokenizer
-model_name = 'google-bert/bert-base-chinese'
 
-# MSRA NER 数据集的标签（根据数据集实际情况调整）
-tags = [
-    'O',  # Outside
-    'B-PER',  # Person
-    'I-PER',
-    'B-ORG',  # Organization
-    'I-ORG',
-    'B-LOC',  # Location
-    'I-LOC'
-]
-
-label2id = {tag: i for i, tag in enumerate(tags)}
-id2label = {i: tag for i, tag in enumerate(tags)}
-
+ds = load_dataset("doushabao4766/msra_ner_k_V3")
+# 加载模型和tokenizer
+model_name = "google-bert/bert-base-chinese"
 tokenizer = AutoTokenizer.from_pretrained(model_name)
 model = AutoModelForTokenClassification.from_pretrained(
     model_name,
-    num_labels=len(tags),
-    id2label=id2label,
-    label2id=label2id
+    num_labels=num_labels,
+    id2label={i: label for i, label in enumerate(label_list)},
+    label2id={label: i for i, label in enumerate(label_list)}
 )
 
-
-# 2. 数据预处理函数
-def align_labels_with_tokens(labels, word_ids):
-    """将标签与tokenizer分词的token对齐"""
-    new_labels = []
-    current_word = None
-
-    for word_id in word_ids:
-        if word_id is None:
-            # 特殊token（如[CLS], [SEP]）设置为-100，在计算损失时忽略
-            new_labels.append(-100)
-        elif word_id != current_word:
-            # 当前word_id对应的新词开始
-            current_word = word_id
-            label = labels[word_id]
-            new_labels.append(label)
-        else:
-            # 当前token是同一个词的一部分
-            label = labels[word_id]
-            # 如果是B-标签，则转换为I-标签
-            if label % 2 == 1:  # B-标签的ID都是奇数
-                label += 1  # 转换为对应的I-标签
-            new_labels.append(label)
-
-    return new_labels
+label_list = ds["train"].features["ner_tags"].feature.names
+num_labels = len(label_list)
+print("标签列表:", label_list)
 
 
+# 数据预处理
 def tokenize_and_align_labels(examples):
-    """处理数据集中的每个样本"""
     tokenized_inputs = tokenizer(
         examples["tokens"],
         truncation=True,
         is_split_into_words=True,
-        max_length=512
+        padding="max_length",
+        max_length=128
     )
 
-    all_labels = examples["ner_tags"]
-    new_labels = []
-    for i, labels in enumerate(all_labels):
-        word_ids = tokenized_inputs.word_ids(i)
-        new_labels.append(align_labels_with_tokens(labels, word_ids))
+    labels = []
+    for i, label in enumerate(examples["ner_tags"]):
+        word_ids = tokenized_inputs.word_ids(batch_index=i)
+        previous_word_idx = None
+        label_ids = []
+        for word_idx in word_ids:
+            # 特殊token设为-100，计算loss时会忽略
+            if word_idx is None:
+                label_ids.append(-100)
+            # 为token设置对应标签
+            elif word_idx != previous_word_idx:
+                label_ids.append(label[word_idx])
+            else:
+                # 对于同一个词的分片token，可以设为-100或相同标签
+                label_ids.append(-100)
+            previous_word_idx = word_idx
 
-    tokenized_inputs["labels"] = new_labels
+        labels.append(label_ids)
+
+    tokenized_inputs["labels"] = labels
     return tokenized_inputs
 
 
-# 3. 加载并预处理数据集
-def load_and_preprocess_data():
-    # 加载MSRA NER数据集
-    ds = load_dataset("doushabao4766/msra_ner_k_V3")
+# 应用预处理
+tokenized_datasets = ds.map(
+    tokenize_and_align_labels,
+    batched=True,
+    remove_columns=ds["train"].column_names
+)
 
-    # 预处理数据集
-    tokenized_ds = ds.map(
-        tokenize_and_align_labels,
-        batched=True,
-        remove_columns=ds["train"].column_names
-    )
+# 训练
+from transformers import TrainingArguments, Trainer
 
-    # 转换为PyTorch格式
-    tokenized_ds.set_format("torch")
-    return tokenized_ds
+training_args = TrainingArguments(
+    output_dir="./ner_results",
+    eval_strategy="epoch",
+    learning_rate=2e-5,
+    per_device_train_batch_size=16,
+    per_device_eval_batch_size=16,
+    num_train_epochs=3,
+    weight_decay=0.01,
+    save_strategy="epoch",
+    load_best_model_at_end=True,
+    metric_for_best_model="f1",
+    logging_dir="./logs",
+)
 
+from transformers import DataCollatorForTokenClassification
 
-# 4. 评估指标
-def compute_metrics(p):
-    seqeval = evaluate.load("seqeval")
-    predictions, labels = p
-    predictions = np.argmax(predictions, axis=2)
+# 初始化数据收集器
+data_collator = DataCollatorForTokenClassification(tokenizer)
 
-    # 移除忽略的标签（-100）
-    true_predictions = [
-        [tags[p] for (p, l) in zip(prediction, label) if l != -100]
-        for prediction, label in zip(predictions, labels)
-    ]
-    true_labels = [
-        [tags[l] for (p, l) in zip(prediction, label) if l != -100]
-        for prediction, label in zip(predictions, labels)
-    ]
+trainer = Trainer(
+    model=model,
+    args=training_args,
+    train_dataset=tokenized_datasets["train"],
+    eval_dataset=tokenized_datasets["test"],
+    data_collator=data_collator,  # 替换tokenizer参数
+    # compute_metrics=compute_metrics
+)
 
-    results = seqeval.compute(predictions=true_predictions, references=true_labels)
-    return {
-        "precision": results["overall_precision"],
-        "recall": results["overall_recall"],
-        "f1": results["overall_f1"],
-        "accuracy": results["overall_accuracy"],
-    }
+trainer.train()
 
-
-# 5. 训练函数
-def train_model():
-    # 加载数据
-    dataset = load_and_preprocess_data()
-
-    # 训练参数
-    training_args = TrainingArguments(
-        output_dir="msra_ner_model",
-        num_train_epochs=3,
-        per_device_train_batch_size=32,
-        per_device_eval_batch_size=32,
-        evaluation_strategy="epoch",
-        save_strategy="epoch",
-        logging_dir="./logs",
-        logging_steps=100,
-        load_best_model_at_end=True,
-        metric_for_best_model="f1",
-        report_to="tensorboard",
-        save_total_limit=3,
-    )
-
-    # 数据收集器
-    data_collator = DataCollatorForTokenClassification(tokenizer=tokenizer)
-
-    # 初始化Trainer
-    trainer = Trainer(
-        model=model,
-        args=training_args,
-        train_dataset=dataset["train"],
-        eval_dataset=dataset["validation"],
-        data_collator=data_collator,
-        compute_metrics=compute_metrics,
-    )
-
-    # 开始训练
-    print("Starting training...")
-    trainer.train()
-    print("Training completed!")
-
-    # 保存模型
-    trainer.save_model("msra_ner_model")
-    tokenizer.save_pretrained("msra_ner_model")
-
-    return trainer
-
+# 3. 保存最终模型
+trainer.save_model("./ner_final_model")  # 模型保存路径
+tokenizer.save_pretrained("./ner_final_model")
 
 # 6. 推理函数
 class NERPredictor:
