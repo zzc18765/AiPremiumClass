@@ -1,243 +1,331 @@
-from transformers import AutoModelForTokenClassification, AutoTokenizer
-import torch
+from transformers import AutoModelForTokenClassification, AutoTokenizer,DataCollatorForTokenClassification
 from transformers import TrainingArguments, Trainer
-import numpy as np
+import torch
+import evaluate  # pip install evaluate
+import seqeval   # pip install seqeval
 from datasets import load_dataset
-from torch.optim.lr_scheduler import LambdaLR
-import torch.distributed as dist
-from torch.nn.parallel import DistributedDataParallel as DDP
-from torch.utils.data.distributed import DistributedSampler
+
+model = AutoModelForTokenClassification.from_pretrained('google-bert/bert-base-chinese', num_labels=7)
+message= "命名实体识别"
+label = torch.tensor([0,1,0,2,5,4])
+
+model_input = tokenizer([message], return_tensors='pt')
+result = model(**model_input)
+
+print(result.loss)
+print(result.logits)
+ds = load_dataset('nlhappy/CLUE-NER')
+# entity_index
+entites = ['O'] + list({'movie', 'name', 'game', 'address', 'position', \
+           'company', 'scene', 'book', 'organization', 'government'})
+tags = ['O']
+for entity in entites[1:]:
+    tags.append('B-' + entity.upper())
+    tags.append('I-' + entity.upper())
+
+entity_index = {entity:i for i, entity in enumerate(entites)}
+
+# entity_index
+entites = ['O'] + list({'movie', 'name', 'game', 'address', 'position', \
+           'company', 'scene', 'book', 'organization', 'government'})
+tags = ['O']
+for entity in entites[1:]:
+    tags.append('B-' + entity.upper())
+    tags.append('I-' + entity.upper())
+
+entity_index = {entity:i for i, entity in enumerate(entites)}
 
 
-# 初始化DDP
-def setup_ddp():
-    dist.init_process_group("nccl")
-    torch.cuda.set_device(int(os.environ["LOCAL_RANK"]))
+def entity_tags_proc(item):
+    # item即是dataset中记录
+    text_len = len(item['text'])  # 根据文本长度生成tags列表
+    tags = [0] * text_len    # 初始值为‘O’
+    # 遍历实体列表，所有实体类别标记填入tags
+    entites = item['ents']
+    for ent in entites:
+        indices = ent['indices']  # 实体索引
+        label = ent['label']   # 实体名
+        tags[indices[0]] = entity_index[label] * 2 - 1
+        for idx in indices[1:]:
+            tags[idx] = entity_index[label] * 2
+    return {'ent_tag': tags}
+
+# 使用自定义回调函数处理数据集记录
+ds1 = ds.map(entity_tags_proc)
+
+token_index = tokenizer.encode('2000年2月add', add_special_tokens=False)
+print(token_index)
+tokens = tokenizer.decode(token_index)
+print(tokens)
+
+input_data = tokenizer([list('2000年2月add')], add_special_tokens=False, truncation=True,
+                       is_split_into_words=True)
+print(input_data)
+
+tokens = tokenizer.decode(token_index)
+print(tokens) # 返回token对应逐个字符
+
+entites = ['O'] + list({'movie', 'name', 'game', 'address', 'position', \
+                        'company', 'scene', 'book', 'organization', 'government'})
+tags = ['O']
+for entity in entites[1:]:
+    tags.append('B-' + entity.upper())
+    tags.append('I-' + entity.upper())
+
+entity_index = {entity: i for i, entity in enumerate(entites)}
 
 
-# 加载数据集
-ds = load_dataset("doushabao4766/msra_ner_k_V3")
-label_list = ds["train"].features["ner_tags"].feature.names
-num_labels = len(label_list)
-print("标签列表:", label_list)
-
-# 加载模型和tokenizer
-model_name = "google-bert/bert-base-chinese"
-tokenizer = AutoTokenizer.from_pretrained(model_name)
-
-
-# 在DDP中，模型需要在初始化后移动到正确的设备
-def get_model():
-    model = AutoModelForTokenClassification.from_pretrained(
-        model_name,
-        num_labels=num_labels,
-        id2label={i: label for i, label in enumerate(label_list)},
-        label2id={label: i for i, label in enumerate(label_list)}
-    )
-    if torch.cuda.is_available():
-        model.cuda()
-    if dist.is_initialized():
-        model = DDP(model, device_ids=[int(os.environ["LOCAL_RANK"])])
-    return model
+def entity_tags_proc(item):
+    # item即是dataset中记录
+    text_len = len(item['text'])  # 根据文本长度生成tags列表
+    tags = [0] * text_len  # 初始值为‘O’
+    # 遍历实体列表，所有实体类别标记填入tags
+    entites = item['ents']
+    for ent in entites:
+        indices = ent['indices']  # 实体索引
+        label = ent['label']  # 实体名
+        tags[indices[0]] = entity_index[label] * 2 - 1
+        for idx in indices[1:]:
+            tags[idx] = entity_index[label] * 2
+    return {'ent_tag': tags}
 
 
-# 数据预处理函数保持不变
-def tokenize_and_align_labels(examples):
-    tokenized_inputs = tokenizer(
-        examples["tokens"],
-        truncation=True,
-        is_split_into_words=True,
-        padding="max_length",
-        max_length=128
-    )
-
-    labels = []
-    for i, label in enumerate(examples["ner_tags"]):
-        word_ids = tokenized_inputs.word_ids(batch_index=i)
-        previous_word_idx = None
-        label_ids = []
-        for word_idx in word_ids:
-            if word_idx is None:
-                label_ids.append(-100)
-            elif word_idx != previous_word_idx:
-                label_ids.append(label[word_idx])
-            else:
-                label_ids.append(-100)
-            previous_word_idx = word_idx
-
-        labels.append(label_ids)
-
-    tokenized_inputs["labels"] = labels
-    return tokenized_inputs
+# 使用自定义回调函数处理数据集记录
+ds1 = ds.map(entity_tags_proc)
 
 
-# 应用预处理
-tokenized_datasets = ds.map(
-    tokenize_and_align_labels,
-    batched=True,
-    remove_columns=ds["train"].column_names
-)
+def data_input_proc(item):
+    # 输入文本先拆分为字符，再转换为模型输入的token索引
+    batch_texts = [list(text) for text in item['text']]
+    # 导入拆分为字符的文本列表时，需要设置参数is_split_into_words=True
+    input_data = tokenizer(batch_texts, truncation=True, add_special_tokens=False, max_length=512,
+                           is_split_into_words=True, padding='max_length')
+    input_data['labels'] = [tag + [0] * (512 - len(tag)) for tag in item['ent_tag']]
+    return input_data
 
 
-# 动态学习率调度器
-def get_linear_schedule_with_warmup(optimizer, num_warmup_steps, num_training_steps, last_epoch=-1):
-    def lr_lambda(current_step: int):
-        if current_step < num_warmup_steps:
-            return float(current_step) / float(max(1, num_warmup_steps))
-        return max(
-            0.0, float(num_training_steps - current_step) / float(max(1, num_training_steps - num_warmup_steps))
-        )
+ds2 = ds1.map(data_input_proc, batched=True)  # batch_size 1000
 
-    return LambdaLR(optimizer, lr_lambda, last_epoch)
+# 记录转换为pytorch
+ds2.set_format('torch', columns=['input_ids', 'token_type_ids', 'attention_mask', 'labels'])
 
+from torch.utils.data import DataLoader
+from transformers import get_linear_schedule_with_warmup
+import torch.optim as optim
 
-# 自定义Trainer类以实现动态学习率
-class CustomTrainer(Trainer):
-    def create_optimizer_and_scheduler(self, num_training_steps: int):
-        # 创建优化器
-        self.optimizer = torch.optim.AdamW(
-            self.model.parameters(),
-            lr=self.args.learning_rate,
-            weight_decay=self.args.weight_decay,
-        )
-
-        # 设置学习率调度器
-        num_warmup_steps = int(0.1 * num_training_steps)  # 10%的训练步数作为warmup
-        self.lr_scheduler = get_linear_schedule_with_warmup(
-            self.optimizer,
-            num_warmup_steps=num_warmup_steps,
-            num_training_steps=num_training_steps
-        )
+train_dl = DataLoader(ds2['train'], shuffle=True, batch_size=16)
 
 
-# 训练函数
-def train_model():
-    # 训练参数设置
-    training_args = TrainingArguments(
-        output_dir="./ner_results",
-        evaluation_strategy="epoch",
-        learning_rate=2e-5,
-        per_device_train_batch_size=16,
-        per_device_eval_batch_size=16,
-        num_train_epochs=3,
-        weight_decay=0.01,
-        save_strategy="epoch",
-        load_best_model_at_end=True,
-        metric_for_best_model="f1",
-        logging_dir="./logs",
-        fp16=True,  # 启用混合精度训练
-        gradient_accumulation_steps=2,  # 梯度累积
-        dataloader_num_workers=4,
-        logging_steps=100,
-        report_to="tensorboard",
-        ddp_find_unused_parameters=False,  # DDP设置
-        local_rank=int(os.environ.get("LOCAL_RANK", -1)),  # DDP设置
-    )
+# 模型创建
+id2lbl = {i:tag for i, tag in enumerate(tags)}
+lbl2id = {tag:i for i, tag in enumerate(tags)}
 
-    # 数据收集器
-    data_collator = DataCollatorForTokenClassification(tokenizer)
+model = AutoModelForTokenClassification.from_pretrained('google-bert/bert-base-chinese',
+                                                        num_labels=21,
+                                                        id2label=id2lbl,
+                                                        label2id=lbl2id)
+model.to('cuda')
 
-    # 创建模型
-    model = get_model()
+# 模型参数分组
+param_optimizer = list(model.named_parameters())
+bert_params, classifier_params = [],[]
 
-    # 创建Trainer
-    trainer = CustomTrainer(
-        model=model,
-        args=training_args,
-        train_dataset=tokenized_datasets["train"],
-        eval_dataset=tokenized_datasets["test"],
-        data_collator=data_collator,
-        # compute_metrics=compute_metrics
-    )
-
-    # 训练
-    trainer.train()
-
-    # 保存模型
-    if trainer.is_world_process_zero():  # 只在主进程保存
-        trainer.save_model("./ner_final_model")
-        tokenizer.save_pretrained("./ner_final_model")
-
-
-# NERPredictor类保持不变
-class NERPredictor:
-    def __init__(self, model_path=None):
-        if model_path:
-            self.model = AutoModelForTokenClassification.from_pretrained(model_path)
-            self.tokenizer = AutoTokenizer.from_pretrained(model_path)
-        else:
-            self.model = model
-            self.tokenizer = tokenizer
-        self.model.eval()
-
-    def predict(self, text):
-        tokens = list(text)
-        inputs = self.tokenizer(
-            tokens,
-            return_tensors="pt",
-            truncation=True,
-            is_split_into_words=True
-        )
-
-        with torch.no_grad():
-            outputs = self.model(**inputs)
-
-        predictions = torch.argmax(outputs.logits, dim=2)
-        predicted_tags = [label_list[i] for i in predictions[0].tolist()]
-        word_ids = inputs.word_ids()
-
-        entities = []
-        current_entity = None
-
-        for token, tag, word_id in zip(tokens, predicted_tags, word_ids):
-            if word_id is None:
-                continue
-
-            if tag.startswith('B-'):
-                if current_entity:
-                    entities.append(current_entity)
-                current_entity = {
-                    'entity': tag[2:],
-                    'start': word_id,
-                    'end': word_id + 1,
-                    'text': tokens[word_id]
-                }
-            elif tag.startswith('I-') and current_entity:
-                if tag[2:] == current_entity['entity']:
-                    current_entity['end'] = word_id + 1
-                    current_entity['text'] = ''.join(tokens[current_entity['start']:current_entity['end']])
-            else:
-                if current_entity:
-                    entities.append(current_entity)
-                    current_entity = None
-
-        if current_entity:
-            entities.append(current_entity)
-
-        return entities
-
-
-# 主程序
-if __name__ == "__main__":
-    import argparse
-    import os
-
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--train', action='store_true', help='Train the model')
-    parser.add_argument('--predict', type=str, help='Text to predict entities')
-    args = parser.parse_args()
-
-    if args.train:
-        # 检查是否使用DDP
-        if "LOCAL_RANK" in os.environ:
-            setup_ddp()
-        train_model()
-    elif args.predict:
-        predictor = NERPredictor("./ner_final_model")
-        entities = predictor.predict(args.predict)
-        print(f"Text: {args.predict}")
-        print("Entities:")
-        for ent in entities:
-            print(f"{ent['entity']}: {ent['text']} (position: {ent['start']}-{ent['end']})")
+for name,params in param_optimizer:
+    if 'bert' in name:
+        bert_params.append(params)
     else:
-        print("Please specify either --train to train the model or --predict with text to predict entities")
+        classifier_params.append(params)
+
+param_groups = [
+    {'params':bert_params, 'lr':1e-5},
+    {'params':classifier_params, 'weight_decay':0.1, 'lr':1e-3}
+]
+
+# optimizer
+optimizer = optim.AdamW(param_groups) # 优化器
+
+# 学习率调度器
+train_steps = len(train_dl) * 5
+scheduler = get_linear_schedule_with_warmup(optimizer,
+                                            num_warmup_steps=100,
+                                            num_training_steps=train_steps)
+
+from tqdm import tqdm
+
+DEVICE = 'cuda'
+
+for epoch in range(5):
+    model.train()
+    tpbar = tqdm(train_dl)
+    for items in tpbar:
+        items = {k: v.to(DEVICE) for k, v in items.items()}
+        optimizer.zero_grad()
+        outputs = model(**items)
+        loss = outputs.loss
+        loss.backward()
+        optimizer.step()
+        scheduler.step()
+
+        tpbar.set_description(f'Epoch:{epoch + 1} ' +
+                              f'bert_lr:{scheduler.get_lr()[0]} ' +
+                              f'classifier_lr:{scheduler.get_lr()[1]} ' +
+                              f'Loss:{loss.item():.4f}')
+
+# dataLoader
+from torch.utils.data import DataLoader
+from transformers import get_linear_schedule_with_warmup
+import torch.optim as optim
+
+train_dl = DataLoader(ds2['train'], shuffle=True, batch_size=16)
+
+
+# 模型创建
+id2lbl = {i:tag for i, tag in enumerate(tags)}
+lbl2id = {tag:i for i, tag in enumerate(tags)}
+
+model = AutoModelForTokenClassification.from_pretrained('google-bert/bert-base-chinese',
+                                                        num_labels=21,
+                                                        id2label=id2lbl,
+                                                        label2id=lbl2id)
+model.to('cuda')
+
+# 模型参数分组
+param_optimizer = list(model.named_parameters())
+bert_params, classifier_params = [],[]
+
+for name,params in param_optimizer:
+    if 'bert' in name:
+        bert_params.append(params)
+    else:
+        classifier_params.append(params)
+
+param_groups = [
+    {'params':bert_params, 'lr':1e-5},
+    {'params':classifier_params, 'weight_decay':0.1, 'lr':1e-3}
+]
+
+# optimizer
+optimizer = optim.AdamW(param_groups) # 优化器
+
+# 学习率调度器
+train_steps = len(train_dl) * 5
+scheduler = get_linear_schedule_with_warmup(optimizer,
+                                            num_warmup_steps=100,
+                                            num_training_steps=train_steps)
+
+from tqdm import tqdm
+import torch
+
+DEVICE = 'cuda'
+
+# 梯度计算缩放器
+scaler = torch.GradScaler()
+
+for epoch in range(5):
+    model.train()
+    tpbar = tqdm(train_dl)
+    for items in tpbar:
+        items = {k: v.to(DEVICE) for k, v in items.items()}
+        optimizer.zero_grad()
+
+        with torch.autocast(device_type='cuda'):
+            outputs = model(**items)
+        loss = outputs.loss
+
+        # 缩放loss后，调用backward
+        scaler.scale(loss).backward()
+        scaler.step(optimizer)
+        scaler.update()
+        scheduler.step()
+
+        tpbar.set_description(f'Epoch:{epoch + 1} ' +
+                              f'bert_lr:{scheduler.get_lr()[0]} ' +
+                              f'classifier_lr:{scheduler.get_lr()[1]} ' +
+                              f'Loss:{loss.item():.4f}')
+
+%%writefile
+ddp_simple.py
+
+import os
+import torch
+import torch.distributed as dist
+import torch.multiprocessing as mp
+import torch.nn as nn
+import torch.optim as optim
+import torchvision.transforms as transforms
+import torchvision.datasets as datasets
+import torchvision.models as models
+from torch.nn.parallel import DistributedDataParallel as DDP
+from torch.utils.data import DataLoader, DistributedSampler
+
+
+# 设置分布式环境
+def setup(rank, world_size):
+    os.environ['MASTER_ADDR'] = 'localhost'
+    os.environ['MASTER_PORT'] = '12355'
+    dist.init_process_group("nccl", rank=rank, world_size=world_size)
+
+
+# 清理分布式环境
+def cleanup():
+    dist.destroy_process_group()
+
+
+# 定义训练循环
+def train(rank, world_size):
+    setup(rank, world_size)
+
+    # 定义模型并将其移动到对应的 GPU 设备端
+    model = models.resnet50().to(rank)
+    ddp_model = DDP(model, device_ids=[rank])
+
+    # 损失函数及优化器
+    criterion = nn.CrossEntropyLoss().to(rank)
+    optimizer = optim.SGD(ddp_model.parameters(), lr=0.01)
+
+    # 定义数据集Dataset的转换和图像增强
+    transform = transforms.Compose([
+        transforms.Resize(256),
+        transforms.CenterCrop(224),
+        transforms.ToTensor(),
+        transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+    ])
+
+    dataset = datasets.CIFAR10(root='./data', train=True, download=True, transform=transform)
+    # 分布式训练采样器
+    sampler = DistributedSampler(dataset, num_replicas=world_size, rank=rank)
+    dataloader = DataLoader(dataset, sampler=sampler, batch_size=32)
+
+    # 在训练开始时创建一次
+    scaler = torch.cuda.amp.GradScaler()
+
+    for epoch in range(10):
+        ddp_model.train()
+        for inputs, labels in dataloader:
+            inputs, labels = inputs.to(rank), labels.to(rank)
+            optimizer.zero_grad()
+            with torch.cuda.amp.autocast():
+                outputs = ddp_model(inputs)
+                loss = criterion(outputs, labels)
+
+            scaler.scale(loss).backward()
+            # 梯度裁剪
+            torch.nn.utils.clip_grad_norm_(ddp_model.parameters(), 1)
+
+            scaler.step(optimizer)
+            scaler.update()
+
+            #             loss.backward()
+            #             optimizer.step()
+            print(f"Rank {rank}, Epoch {epoch}, Loss: {loss.item()}")
+
+    cleanup()
+
+
+def main():
+    world_size = torch.cuda.device_count()
+    mp.spawn(train, args=(world_size,), nprocs=world_size, join=True)
+
+
+if __name__ == "__main__":
+    main()
