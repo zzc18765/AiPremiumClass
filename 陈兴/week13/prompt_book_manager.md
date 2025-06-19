@@ -1,1 +1,1 @@
-[https://chatgpt.com/share/68526593-9c50-8011-ad34-707036ed26fc](https://chatgpt.com/share/68526593-9c50-8011-ad34-707036ed26fc)
+[智能图书管理AI](https://chatgpt.com/share/68526593-9c50-8011-ad34-707036ed26fc)
