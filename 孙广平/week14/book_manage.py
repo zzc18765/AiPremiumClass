@@ -9,7 +9,7 @@ from langchain_core.chat_history import InMemoryChatMessageHistory
 from langchain_core.runnables.history import RunnableWithMessageHistory
 from langchain_core.runnables import RunnableLambda
 from typing import Dict, List
-from pydantic import BaseModel  # ✅ 添加 Pydantic 导入
+from pydantic import BaseModel  
 import os
 
 BOOKS_CSV = "books.csv"
@@ -72,12 +72,10 @@ def return_book(user_id: str, book_id: str):
 
 app = FastAPI()
 
-# ✅ 添加 Pydantic 模型用于 Playground 表单生成
 class QAInput(BaseModel):
     question: str
     session_id: str
 
-# LangChain 路由（多轮对话，支持 session_id）
 def input_adapter(inputs):
     question = inputs.get("question", "")
     return {
@@ -87,7 +85,6 @@ def input_adapter(inputs):
 
 qa_chain_runnable = RunnableLambda(input_adapter) | with_msg_hist_chain
 
-# ✅ 添加 input_type=QAInput 解决 Playground 报错
 add_routes(app, qa_chain_runnable, path="/qa", input_type=QAInput)
 
 @app.get("/books")
@@ -108,7 +105,5 @@ def borrow(user_id: str, book_id: str):
 def return_(user_id: str, book_id: str):
     return {"message": return_book(user_id, book_id)}
 
-# 启动服务方式：
 # uvicorn book_manage:app --reload
-# 访问地址：
 # http://127.0.0.1:8000/qa/playground
