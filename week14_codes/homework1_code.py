@@ -7,34 +7,19 @@ import os
 from langchain_openai import ChatOpenAI # LLM调用封装
 from langchain_core.messages import HumanMessage, AIMessage, SystemMessage # 对话角色：user、assistant、system
 from langchain_core.output_parsers import StrOutputParser
-from langchain_community.chat_message_histories import ChatMessageHistory
-import json
-from datetime import datetime
+from langchain_community.chat_message_histories import FileChatMessageHistory, ChatMessageHistory
 
 # 1. 导入必要包
-from langchain_core.chat_history import BaseChatMessageHistory, InMemoryChatMessageHistory
 from langchain_core.runnables.history import RunnableWithMessageHistory
 
 # 导入template中传递聊天历史信息的“占位”类
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 
-def save_history(session_id):
-    # Message对象中to_json()消息转换json格式
-    history = [msg.to_json() for msg in store[session_id].messages]
-    with open(f"history_{session_id}.json", "w", encoding="utf-8") as f:
-        json.dump(history, f, ensure_ascii=False, indent=2)
+# 使用FileChatMessageHistory实现聊天历史的保存和加载
 
-# 实现：聊天历史保存（不同session_id）
-def load_history(session_id):
-    # 加载失败情况下，跳转到except（错误）
-    try:
-        with open(f"history_{session_id}.json", "r", encoding="utf-8") as f:
-            messages = json.load(f)
-        store[session_id] = ChatMessageHistory()
-        store[session_id].parse_json(messages)
-    except FileNotFoundError:
-        store[session_id] = ChatMessageHistory()
-
+def get_session_history(session_id):
+    # 文件名自动为 history_{session_id}.json
+    return FileChatMessageHistory(f"history_{session_id}.json")
 
 if __name__ == '__main__':
     load_dotenv(find_dotenv())
@@ -58,15 +43,6 @@ if __name__ == '__main__':
     parser = StrOutputParser()
     # chain 构建
     chain =  prompt | model | parser
-    
-    # 定制存储消息的dict
-    store = {}
-
-    # 定义函数：根据sessionId获取聊天历史（callback 回调）    
-    def get_session_history(session_id):
-        if session_id not in store:
-            load_history(session_id)
-        return store[session_id]
 
     # 在chain中注入聊天历史消息
     with_msg_hist = RunnableWithMessageHistory(
@@ -91,5 +67,3 @@ if __name__ == '__main__':
             config={'configurable':{'session_id': session_id}})
 
         print('AI Message:', response)
-        # 聊天历史自动保存
-        save_history(session_id)
