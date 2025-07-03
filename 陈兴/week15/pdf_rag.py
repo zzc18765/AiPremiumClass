@@ -1,6 +1,6 @@
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 from dotenv import load_dotenv
-from langchain_community.document_loaders import PyPDFLoader
+from langchain_community.document_loaders import PDFMinerLoader
 
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_community.vectorstores import FAISS
@@ -31,7 +31,7 @@ if __name__ == '__main__':
 
     if not os.path.exists('./陈兴/week15/local_save'):
         # 加载PDF文件内容，转换为langchain处理的Document
-        loader = PyPDFLoader('./陈兴/week15/data/The-Era-of-Experience-Paper.pdf')
+        loader = PDFMinerLoader('./陈兴/week15/data/The-Era-of-Experience-Paper.pdf')
         docs = loader.load()
 
         # TextSplitter实现加载后Document分割
