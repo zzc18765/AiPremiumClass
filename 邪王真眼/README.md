@@ -41,3 +41,4 @@
 | 第十二周 | 预训练模型微调技巧 | 1. 利用上周NER模型训练任务代码，复现课堂案例中：动态学习率、混合精度、DDP训练实现；<br>2. 利用课堂案例，实现分布式DDP模型训练。存盘后加载实现推理 |
 | 第十三周 | LLM模型prompt开发及大模型应用 | 1. 安装ollama，下载模型并用代码方式调用；<br>2. 利用OpenAI API 调用远端大模型API，调试参数观察输出结果的差异；<br>3. 利用大模型提示词设计一个智能图书管理AI；<br>功能:实现图书借阅和归还。根据喜好为读者推荐图书。 |
 | 第十四周 | LangChain及RAG原理 | 1. 通过langchain实现特定主题聊天系统，支持多轮对话。<br>2. 借助langchain实现图书管理系统开发扩展，通过图书简介为借阅读者提供咨询。 |
+| 第十五周 | RAG相关技术及Agent应用 | 1. 根据课堂RAG示例，完成外部文档导入并进行RAG检索的过程。<br>外部PDF文档：https://storage.googleapis.com/deepmind-media/Era-of-Experience%20/The%20Era%20of%20Experience%20Paper.pdf<br># 使用 langchain_community.document_loaders.PDFMinerLoader 加载 PDF 文件。<br>docs = PDFMinerLoader(path).load()<br>2. 使用graphrag构建一篇小说（自主选择文档）的RAG知识图，实现本地和全局问题的问答。（截图代码运行结果） |
