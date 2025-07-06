@@ -26,3 +26,5 @@ __pycache__
 *.pth
 *.pt
 *.safetensors
+.env
+week15_codes/homework2
